@@ -4,6 +4,7 @@ import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import br.com.suamusica.rxmediaplayer.domain.MediaProgress
 import br.com.suamusica.rxmediaplayer.domain.Status
 import io.reactivex.Completable
+import io.reactivex.Flowable
 import io.reactivex.Maybe
 import io.reactivex.Observable
 
@@ -24,4 +25,5 @@ interface RxMediaService {
 
   // event streams
   fun nowPlaying(): Observable<Triple<MediaItem, Status, MediaProgress>>
+  fun queueUpdated(): Flowable<Unit>
 }
