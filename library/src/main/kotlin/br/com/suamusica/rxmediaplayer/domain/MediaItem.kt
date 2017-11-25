@@ -1,6 +1,10 @@
 package br.com.suamusica.rxmediaplayer.domain
 
-data class MediaItem(
+data class MediaItem constructor(
   val name: String,
-  val path: String
-)
+  val author: String,
+  val url: String,
+  val coverUrl: String
+) {
+  private val timestamp = System.currentTimeMillis()
+}

@@ -1,59 +1,85 @@
 package br.com.suamusica.rxmediaplayer.service
 
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import br.com.suamusica.rxmediaplayer.domain.MediaProgress
-import br.com.suamusica.rxmediaplayer.domain.Status
-import br.com.suamusica.rxmediaplayer.extensions.add
 import br.com.suamusica.rxmediaplayer.infra.MediaPlayer
-import io.reactivex.*
+import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import java.util.*
-import java.util.concurrent.SynchronousQueue
 
-class RxMediaServiceImpl(
+internal class RxMediaServiceImpl(
   private val mediaPlayer: MediaPlayer,
   private val scheduler: Scheduler
 ) : RxMediaService {
-
-  val queue: Queue<Pair<MediaItem, Status>> = SynchronousQueue()
+  private val queue: LinkedList<MediaItem> = LinkedList()
 
   override fun add(mediaItem: MediaItem): Completable =
-    Completable.fromCallable { queue.add(mediaItem, Status.IDLE) }
+    Completable.fromCallable { queue.add(mediaItem.copy()) }
       .subscribeOn(scheduler)
 
-  override fun remove(mediaItem: MediaItem): Completable {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  override fun remove(index: Int): Completable =
+    Completable.fromCallable { queue.removeAt(index) }
+      .subscribeOn(scheduler)
+
+  override fun removeAll(): Completable =
+    Completable.fromCallable { queue.clear() }
+      .subscribeOn(scheduler)
+
+  override fun reorder(indexA: Int, indexB: Int) =
+    Completable.fromCallable {
+      val itemA = queue.get(indexA)
+      val itemB = queue.get(indexB)
+
+      queue.set(indexA, itemB)
+      queue.set(indexB, itemA)
+    }.subscribeOn(scheduler)
+
+  override fun queue(): Observable<MediaItem> =
+    Observable.create<MediaItem> { emitter ->
+      try {
+        queue.forEach { emitter.onNext(it) }
+        emitter.onComplete()
+      } catch (t: Throwable) {
+        emitter.onError(t)
+      }
+    }.subscribeOn(scheduler)
+
+  override fun play(): Completable =
+    mediaPlayer.nowPlaying()
+      .switchIfEmpty(maybeFirst())
+      .flatMapCompletable { mediaPlayer.play(queue.first) }
+      .subscribeOn(scheduler)
+
+  private fun maybeFirst() = maybeMediaItemBasedOnCurrentIndex { 0 }
+  private fun maybeNext() = maybeMediaItemBasedOnCurrentIndex { it + 1 }
+  private fun maybePrevious() = maybeMediaItemBasedOnCurrentIndex { it - 1 }
+
+  private fun maybeMediaItemBasedOnCurrentIndex(mapIndex: (Int) -> Int): Maybe<MediaItem> {
+    return mediaPlayer.nowPlaying()
+      .flatMap {
+        if (queue.isEmpty()) {
+          return@flatMap Maybe.empty<MediaItem>()
+        }
+
+        return@flatMap Maybe.fromCallable {
+          val currentIndex = queue.indexOf(it)
+          val index = mapIndex(currentIndex)
+          return@fromCallable queue[index]
+        }
+      }
+      .onErrorComplete()
+      .subscribeOn(scheduler)
   }
 
-  override fun removeAll(): Completable {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
 
-  override fun play(): Maybe<MediaItem> {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
+  override fun next() = maybeNext().flatMapCompletable { mediaPlayer.play(it) }
 
-  override fun next(): Maybe<MediaItem> {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
+  override fun previous() = maybePrevious().flatMapCompletable { mediaPlayer.play(it) }
 
-  override fun previous(): Maybe<MediaItem> {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
+  override fun pause() = mediaPlayer.pause()
 
-  override fun pause(): Completable {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
+  override fun stop() = mediaPlayer.stop()
 
-  override fun stop(): Completable {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
-
-  override fun nowPlaying(): Observable<Triple<MediaItem, Status, MediaProgress>> {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
-
-  override fun queueUpdated(): Flowable<Unit> {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
+  override fun nowPlaying() = mediaPlayer.status()
 }
