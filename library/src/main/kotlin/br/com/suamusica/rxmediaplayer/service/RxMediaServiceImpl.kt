@@ -6,7 +6,7 @@ import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Scheduler
-import java.util.*
+import java.util.LinkedList
 
 internal class RxMediaServiceImpl(
   private val mediaPlayer: MediaPlayer,
@@ -26,7 +26,7 @@ internal class RxMediaServiceImpl(
     Completable.fromCallable { queue.clear() }
       .subscribeOn(scheduler)
 
-  override fun reorder(indexA: Int, indexB: Int) =
+  override fun reorder(indexA: Int, indexB: Int): Completable =
     Completable.fromCallable {
       val itemA = queue.get(indexA)
       val itemB = queue.get(indexB)
@@ -48,8 +48,18 @@ internal class RxMediaServiceImpl(
   override fun play(): Completable =
     mediaPlayer.nowPlaying()
       .switchIfEmpty(maybeFirst())
-      .flatMapCompletable { mediaPlayer.play(queue.first) }
+      .flatMapCompletable { mediaPlayer.play(it) }
       .subscribeOn(scheduler)
+
+  override fun next(): Completable = maybeNext().flatMapCompletable { mediaPlayer.play(it) }
+
+  override fun previous(): Completable = maybePrevious().flatMapCompletable { mediaPlayer.play(it) }
+
+  override fun pause() = mediaPlayer.pause()
+
+  override fun stop() = mediaPlayer.stop()
+
+  override fun status() = mediaPlayer.status()
 
   private fun maybeFirst() = maybeMediaItemBasedOnCurrentIndex { 0 }
   private fun maybeNext() = maybeMediaItemBasedOnCurrentIndex { it + 1 }
@@ -57,29 +67,18 @@ internal class RxMediaServiceImpl(
 
   private fun maybeMediaItemBasedOnCurrentIndex(mapIndex: (Int) -> Int): Maybe<MediaItem> {
     return mediaPlayer.nowPlaying()
-      .flatMap {
-        if (queue.isEmpty()) {
-          return@flatMap Maybe.empty<MediaItem>()
-        }
+        .flatMap {
+          if (queue.isEmpty()) {
+            return@flatMap Maybe.empty<MediaItem>()
+          }
 
-        return@flatMap Maybe.fromCallable {
-          val currentIndex = queue.indexOf(it)
-          val index = mapIndex(currentIndex)
-          return@fromCallable queue[index]
+          return@flatMap Maybe.fromCallable {
+            val currentIndex = queue.indexOf(it)
+            val index = mapIndex(currentIndex)
+            return@fromCallable queue[index]
+          }
         }
-      }
-      .onErrorComplete()
-      .subscribeOn(scheduler)
+        .onErrorComplete()
+        .subscribeOn(scheduler)
   }
-
-
-  override fun next() = maybeNext().flatMapCompletable { mediaPlayer.play(it) }
-
-  override fun previous() = maybePrevious().flatMapCompletable { mediaPlayer.play(it) }
-
-  override fun pause() = mediaPlayer.pause()
-
-  override fun stop() = mediaPlayer.stop()
-
-  override fun nowPlaying() = mediaPlayer.status()
 }

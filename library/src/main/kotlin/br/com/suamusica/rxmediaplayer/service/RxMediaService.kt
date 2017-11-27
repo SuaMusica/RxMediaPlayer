@@ -20,7 +20,7 @@ interface RxMediaService {
 
   fun queue(): Observable<MediaItem>
 
-  // manage nowPlaying state
+  // manage status state
   fun play(): Completable
   fun next(): Completable
   fun previous(): Completable
@@ -29,7 +29,7 @@ interface RxMediaService {
   fun stop(): Completable
 
   // event streams
-  fun nowPlaying(): Observable<Triple<MediaItem, Status, MediaProgress>>
+  fun status(): Observable<Triple<MediaItem, Status, MediaProgress>>
 
   companion object {
     fun create(mediaPlayer: MediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =
