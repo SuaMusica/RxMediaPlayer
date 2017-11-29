@@ -4,7 +4,6 @@ data class MediaItem constructor(
   val name: String,
   val author: String,
   val url: String,
-  val coverUrl: String
-) {
-  private val timestamp = System.currentTimeMillis()
-}
+  val coverUrl: String,
+  val timestamp: Long = System.currentTimeMillis()
+)

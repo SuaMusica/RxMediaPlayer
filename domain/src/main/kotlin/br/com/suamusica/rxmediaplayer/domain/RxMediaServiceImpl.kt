@@ -12,7 +12,7 @@ internal class RxMediaServiceImpl(
   private var randomized = false
 
   override fun add(mediaItem: MediaItem): Completable =
-    Completable.fromAction { queue.push(mediaItem.copy()) }
+    Completable.fromAction { queue.offer(mediaItem) }
       .subscribeOn(scheduler)
 
   override fun add(mediaItem: List<MediaItem>): Completable =
