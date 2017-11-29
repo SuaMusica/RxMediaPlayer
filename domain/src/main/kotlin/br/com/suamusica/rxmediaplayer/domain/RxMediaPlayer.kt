@@ -1,4 +1,4 @@
-package br.com.suamusica.rxmediaplayer.infra
+package br.com.suamusica.rxmediaplayer.domain
 
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import br.com.suamusica.rxmediaplayer.domain.MediaProgress

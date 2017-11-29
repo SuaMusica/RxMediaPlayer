@@ -1,0 +1,14 @@
+apply plugin: 'java'
+apply plugin: "kotlin"
+
+dependencies {
+  implementation fileTree(dir: 'libs', include: ['*.jar'])
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+  implementation "io.reactivex.rxjava2:rxjava:2.1.6"
+
+  testImplementation "org.mockito:mockito-core:$mockitoVersion"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-core:$hamcrestCoreVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestCoreVersion"
+  testImplementation "com.nhaarman:mockito-kotlin-kt1.1:$mockitoKotlinVersion"
+}

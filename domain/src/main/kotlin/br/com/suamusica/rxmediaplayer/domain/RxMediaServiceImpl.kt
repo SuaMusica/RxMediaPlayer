@@ -1,7 +1,5 @@
-package br.com.suamusica.rxmediaplayer.service
+package br.com.suamusica.rxmediaplayer.domain
 
-import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import br.com.suamusica.rxmediaplayer.infra.RxMediaPlayer
 import io.reactivex.*
 import io.reactivex.Observable
 import java.util.*

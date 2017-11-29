@@ -1,9 +1,5 @@
-package br.com.suamusica.rxmediaplayer.service
+package br.com.suamusica.rxmediaplayer.domain
 
-import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import br.com.suamusica.rxmediaplayer.domain.MediaProgress
-import br.com.suamusica.rxmediaplayer.domain.Status
-import br.com.suamusica.rxmediaplayer.infra.RxMediaPlayer
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Scheduler
