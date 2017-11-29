@@ -8,7 +8,7 @@ import io.reactivex.Maybe
 import io.reactivex.Observable
 
 
-interface MediaPlayer {
+interface RxMediaPlayer {
   fun play(mediaItem: MediaItem): Completable
   fun pause(): Completable
   fun stop(): Completable
