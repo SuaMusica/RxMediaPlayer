@@ -12,8 +12,12 @@ internal class RxMediaServiceImpl(
   private var randomized = false
 
   override fun add(mediaItem: MediaItem): Completable =
-    Completable.fromCallable { queue.add(mediaItem.copy()) }
+    Completable.fromAction { queue.push(mediaItem.copy()) }
       .subscribeOn(scheduler)
+
+  override fun add(mediaItem: List<MediaItem>): Completable =
+    Observable.fromIterable(mediaItem.toList())
+      .concatMapCompletable { add(it) }
 
   override fun remove(index: Int): Completable =
     Completable.fromCallable { queue.removeAt(index) }
@@ -71,32 +75,46 @@ internal class RxMediaServiceImpl(
 
   override fun status() = rxMediaPlayer.status()
 
-  private fun maybeFirst() = maybeMediaItemBasedOnCurrentIndex { 0 }
+  private fun maybeFirst() = Maybe.create<MediaItem> {
+    when (queue.peek()) {
+      null -> it.onComplete()
+      else -> {
+        it.onSuccess(queue.peek())
+        it.onComplete()
+      }
+    }
+  }
 
   private fun maybeNext() =
-    maybeRandom().switchIfEmpty(maybeMediaItemBasedOnCurrentIndex { it + 1 })
+    maybeRandom().switchIfEmpty(
+      maybeMediaItemBasedOnElement { current ->
+        queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it + 1 })
+      }
+    )
 
   private fun maybePrevious() =
-    maybeRandom().switchIfEmpty(maybeMediaItemBasedOnCurrentIndex { it - 1 })
+    maybeRandom().switchIfEmpty(
+      maybeMediaItemBasedOnElement { current ->
+        queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it - 1 })
+      }
+    )
 
-  private fun maybeRandom() =
-    maybeMediaItemBasedOnCurrentIndex { Random().nextInt(queue.size) }
+  private fun maybeRandom(): Maybe<MediaItem> =
+    maybeMediaItemBasedOnElement { current -> queue.getRandomElement(ignore = current) }
       .filter { randomized }
 
-  private fun maybeMediaItemBasedOnCurrentIndex(mapIndex: (Int) -> Int): Maybe<MediaItem> {
+
+  private fun maybeMediaItemBasedOnElement(mapElement: (MediaItem) -> MediaItem?): Maybe<MediaItem> {
     return rxMediaPlayer.nowPlaying()
-      .flatMap {
+      .flatMap { playingItem ->
         if (queue.isEmpty()) {
           return@flatMap Maybe.empty<MediaItem>()
         }
 
-        return@flatMap Maybe.fromCallable {
-          val currentIndex = queue.indexOf(it)
-          val index = mapIndex(currentIndex)
-          return@fromCallable queue[index]
-        }
+        val mapped = mapElement(playingItem)
+
+        if (mapped == null) Maybe.empty<MediaItem>() else Maybe.just(mapped)
       }
       .onErrorComplete()
-      .subscribeOn(scheduler)
   }
 }

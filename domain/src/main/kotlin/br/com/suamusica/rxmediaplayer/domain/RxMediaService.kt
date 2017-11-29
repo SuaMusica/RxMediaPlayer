@@ -10,6 +10,8 @@ interface RxMediaService {
   // manage queue
   fun add(mediaItem: MediaItem) : Completable
 
+  fun add(mediaItem: List<MediaItem>) : Completable
+
   fun remove(index: Int) : Completable
   fun removeAll() : Completable
 
