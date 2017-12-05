@@ -23,7 +23,7 @@ interface RxMediaService {
 
   fun isRandomized(): Single<Boolean>
 
-  // manage status state
+  // manage stateChanges state
   fun play(): Completable
   fun next(): Completable
   fun previous(): Completable
@@ -32,7 +32,7 @@ interface RxMediaService {
   fun stop(): Completable
 
   // event streams
-  fun status(): Observable<Triple<MediaItem, Status, MediaProgress>>
+  fun stateChanges(): Observable<MediaPlayerState>
 
   companion object {
     fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =

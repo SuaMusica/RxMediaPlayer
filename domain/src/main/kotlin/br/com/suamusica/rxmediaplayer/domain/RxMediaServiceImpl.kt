@@ -73,7 +73,7 @@ internal class RxMediaServiceImpl(
 
   override fun stop() = rxMediaPlayer.stop()
 
-  override fun status() = rxMediaPlayer.status()
+  override fun stateChanges() = rxMediaPlayer.stateChanges()
 
   private fun maybeFirst() = Maybe.create<MediaItem> {
     when (queue.peek()) {
