@@ -1,2 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="br.com.suamusica.rxmediaplayer.android" />
+  package="br.com.suamusica.rxmediaplayer.android">
+
+  <application>
+    <service android:name="br.com.suamusica.rxmediaplayer.android.RxAndroidMediaService" />
+  </application>
+
+</manifest>
