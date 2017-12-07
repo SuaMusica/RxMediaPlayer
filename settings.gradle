@@ -1,2 +1,2 @@
-include ':app', ':domain', ':android'
+include ':demo', ':domain', ':android'
 

@@ -4,7 +4,15 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.PowerManager
-import br.com.suamusica.rxmediaplayer.domain.*
+import br.com.suamusica.rxmediaplayer.domain.CompletedState
+import br.com.suamusica.rxmediaplayer.domain.IdleState
+import br.com.suamusica.rxmediaplayer.domain.MediaItem
+import br.com.suamusica.rxmediaplayer.domain.MediaPlayerState
+import br.com.suamusica.rxmediaplayer.domain.MediaProgress
+import br.com.suamusica.rxmediaplayer.domain.PausedState
+import br.com.suamusica.rxmediaplayer.domain.PlayingState
+import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
+import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
@@ -17,6 +25,10 @@ class RxAndroidMediaPlayer(context: Context) : RxMediaPlayer {
 
   private var state by Delegates.observable<MediaPlayerState>(IdleState) { _, _, newState ->
     stateDispatcher.onNext(newState)
+
+    if (newState !is PlayingState) {
+      progressDisposable.dispose()
+    }
   }
 
   private val mediaPlayer: MediaPlayer = MediaPlayer()
@@ -30,12 +42,6 @@ class RxAndroidMediaPlayer(context: Context) : RxMediaPlayer {
     mediaPlayer.setOnCompletionListener {
       currentMediaItem?.let { state = CompletedState(it) }
     }
-
-    stateChanges()
-      .filter { it !is PlayingState }
-      .doOnNext { progressDisposable.dispose() }
-      .retry()
-      .subscribe()
   }
 
   override fun play(mediaItem: MediaItem) = Completable.create { completableEmitter ->
