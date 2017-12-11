@@ -26,7 +26,6 @@ abstract class RxMediaServiceActivity : AppCompatActivity() {
 
   override fun onStart() {
     super.onStart()
-
     val serviceIntent = Intent(this, RxAndroidMediaService::class.java)
     bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
   }

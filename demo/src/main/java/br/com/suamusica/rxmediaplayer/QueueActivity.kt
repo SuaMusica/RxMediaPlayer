@@ -1,9 +1,9 @@
 package br.com.suamusica.rxmediaplayer
 
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import br.com.suamusica.rxmediaplayer.android.RxMediaServiceActivity
 
-class QueueActivity : AppCompatActivity() {
+class QueueActivity : RxMediaServiceActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
