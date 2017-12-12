@@ -1,8 +1,11 @@
 package br.com.suamusica.rxmediaplayer.domain
 
-import io.reactivex.*
+import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
-import java.util.*
+import io.reactivex.Scheduler
+import io.reactivex.Single
+import java.util.LinkedList
 
 internal class RxMediaServiceImpl(
   private val rxMediaPlayer: RxMediaPlayer,
@@ -12,7 +15,7 @@ internal class RxMediaServiceImpl(
   private var randomized = false
 
   override fun add(mediaItem: MediaItem): Completable =
-    Completable.fromAction { queue.offer(mediaItem) }
+    Completable.fromAction { queue.offer(mediaItem.copy()) }
       .subscribeOn(scheduler)
 
   override fun add(mediaItem: List<MediaItem>): Completable =
@@ -60,6 +63,10 @@ internal class RxMediaServiceImpl(
       .switchIfEmpty(maybeFirst())
       .flatMapCompletable { rxMediaPlayer.play(it) }
       .subscribeOn(scheduler)
+
+  override fun play(mediaItem: MediaItem): Completable = stop()
+      .andThen(Single.fromCallable { mediaItem.copy() })
+      .flatMapCompletable { rxMediaPlayer.play(it) }
 
   override fun next(): Completable =
     maybeNext().flatMapCompletable { rxMediaPlayer.play(it) }

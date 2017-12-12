@@ -25,6 +25,7 @@ interface RxMediaService {
 
   // manage stateChanges state
   fun play(): Completable
+  fun play(mediaItem: MediaItem): Completable
   fun next(): Completable
   fun previous(): Completable
 
