@@ -8,9 +8,12 @@ import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
 import io.reactivex.Maybe
+import kotlin.properties.Delegates
 
 abstract class RxMediaServiceActivity : AppCompatActivity() {
-  private var rxMediaService: RxMediaService? = null
+  private var rxMediaService by Delegates.observable<RxMediaService?>(null) { _,_, newValue ->
+    newValue?.let { onRxMediaServiceBound(it) } ?: onRxMediaServiceUnbound()
+  }
 
   private val connection: ServiceConnection = object : ServiceConnection {
     override fun onServiceDisconnected(componentName: ComponentName?) {
@@ -33,6 +36,14 @@ abstract class RxMediaServiceActivity : AppCompatActivity() {
   override fun onStop() {
     super.onStop()
     unbindService(connection)
+  }
+
+  open fun onRxMediaServiceBound(rxMediaService: RxMediaService) {
+    // ignored
+  }
+
+  open fun onRxMediaServiceUnbound() {
+    // ignored
   }
 
   fun rxMediaService() : Maybe<RxMediaService> = Maybe.create { emitter ->
