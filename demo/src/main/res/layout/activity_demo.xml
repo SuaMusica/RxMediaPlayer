@@ -11,17 +11,15 @@
     android:id="@+id/recyclerViewMediaItems"
     android:layout_width="0dp"
     android:layout_height="0dp"
-    android:layout_marginBottom="8dp"
-    app:layout_constraintBottom_toTopOf="@+id/include"
+    app:layout_constraintBottom_toTopOf="@+id/item_miniplayer_view"
     app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHeight_default="wrap"
+    app:layout_constraintHeight_default="spread"
     app:layout_constraintHorizontal_bias="0.6"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent"/>
 
-  <include
-    android:id="@+id/include"
-    layout="@layout/item_player"
+  <br.com.suamusica.rxmediaplayer.MiniPlayerView
+    android:id="@+id/item_miniplayer_view"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
     app:layout_constraintBottom_toBottomOf="parent"
