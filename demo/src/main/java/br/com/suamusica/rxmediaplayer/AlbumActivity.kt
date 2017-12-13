@@ -10,7 +10,7 @@ import io.reactivex.Maybe
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.android.synthetic.main.activity_demo.recyclerViewMediaItems
+import kotlinx.android.synthetic.main.activity_demo.*
 
 class AlbumActivity : RxMediaServiceActivity() {
 
@@ -26,6 +26,38 @@ class AlbumActivity : RxMediaServiceActivity() {
     observeAdapterEvents(mediaItemAdapter)
 
     recyclerViewMediaItems.adapter = mediaItemAdapter
+
+    bindMiniPlayer()
+  }
+
+  private fun bindMiniPlayer() {
+    item_miniplayer_view.onClickPlay = {
+      rxMediaService()
+        .flatMapCompletable { it.play() }
+        .doOnError{ showError(it) }
+        .subscribe()
+    }
+
+    item_miniplayer_view.onClickPause = {
+      rxMediaService()
+        .flatMapCompletable { it.pause() }
+        .doOnError{ showError(it)}
+        .subscribe()
+    }
+
+    item_miniplayer_view.onClickNext = {
+      rxMediaService()
+        .flatMapCompletable { it.next() }
+        .doOnError{ showError(it) }
+        .subscribe()
+    }
+
+    item_miniplayer_view.onClickPrev = {
+      rxMediaService()
+        .flatMapCompletable { it.previous() }
+        .doOnError{ showError(it) }
+        .subscribe()
+    }
   }
 
   private fun observeAdapterEvents(mediaItemAdapter: MediaItemAdapter) {
