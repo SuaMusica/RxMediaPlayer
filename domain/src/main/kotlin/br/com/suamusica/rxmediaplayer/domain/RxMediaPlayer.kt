@@ -13,4 +13,5 @@ interface RxMediaPlayer {
   fun nowPlaying(): Maybe<MediaItem>
 
   fun stateChanges(): Observable<MediaPlayerState>
+  fun isPlaying(mediaItem: MediaItem): Observable<Boolean>?
 }

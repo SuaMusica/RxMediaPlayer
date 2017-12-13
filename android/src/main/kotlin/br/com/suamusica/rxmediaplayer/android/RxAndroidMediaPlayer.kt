@@ -44,6 +44,8 @@ class RxAndroidMediaPlayer(context: Context) : RxMediaPlayer {
     }
   }
 
+  override fun isPlaying(mediaItem: MediaItem) = Observable.just(mediaPlayer.isPlaying)
+
   override fun play(mediaItem: MediaItem) = Completable.create { completableEmitter ->
     try {
       if (currentMediaItem != mediaItem) {

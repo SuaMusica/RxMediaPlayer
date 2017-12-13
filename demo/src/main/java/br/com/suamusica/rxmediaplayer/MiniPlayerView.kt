@@ -3,11 +3,10 @@ package br.com.suamusica.rxmediaplayer
 import android.content.Context
 import android.support.constraint.ConstraintLayout
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.*
+import io.reactivex.Observable
 
 class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : ConstraintLayout(context, attrs, defStyleAttr) {
   private lateinit var playPauseButton: ImageButton
@@ -20,7 +19,8 @@ class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int)
   private lateinit var nameSongText: TextView
   private lateinit var artistSongNameText: TextView
 
-  var isPlayingSong: (() -> Boolean)? = null
+  var isPlayingSong: (() -> Observable<Boolean>)? = null
+
   var onClickPlay: (() -> Unit)? = null
   var onClickPause: (() -> Unit)? = null
   var onClickPrev: (() -> Unit)? = null
@@ -38,18 +38,31 @@ class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int)
   }
 
   private fun setOnClick() {
-    playPauseButton.setOnClickListener {
-      val isPlaying = isPlayingSong?.invoke()
-      if (isPlaying != null && isPlaying) {
-        onClickPause?.invoke()
-        configPauseButton()
-      } else {
-        onClickPlay?.invoke()
-        configPlayButton()
-      }
-    }
+    playPauseButton.setOnClickListener { clickPlayPause() }
     nextButton.setOnClickListener { onClickNext?.invoke() }
     prevButton.setOnClickListener { onClickPrev?.invoke() }
+  }
+
+  private fun clickPlayPause() {
+    isPlayingSong?.invoke()?.subscribe(
+      { configPlayPauseButton(it) },
+      { showError(it) }
+    )
+  }
+
+  private fun configPlayPauseButton(it: Boolean?) {
+    if (it != null && it) {
+      onClickPause?.invoke()
+      configPauseButton()
+    } else {
+      onClickPlay?.invoke()
+      configPlayButton()
+    }
+  }
+
+  private fun showError(throwable: Throwable) {
+    Log.e("DemoApp MiniPlayer", throwable.message, throwable)
+    Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
   }
 
   private fun configPlayButton() {
