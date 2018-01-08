@@ -10,19 +10,19 @@ class MediaRepository {
             name = "Onde Há Fumaca Há Fogo",
             author = "Cleber e Cauan",
             coverUrl = "https:\\/\\/images.suamusica.com.br\\/BhBN-RC4-w8r6PuY0W_wbc3JPDs=\\/240x240\\/3988508\\/1997513\\/cd_cover.jpg",
-            url = "https:\\/\\/files.suamusica.com.br\\/3988508\\/1997513\\/01%20-%20Onde%20H%C3%A1%20Fumaca%20Ha%20Fogo.mp3?Expires=1513048967&Signature=gZbvBUMec~MtSFjDTjCRlP~E7uVaJx3OXvdbxhx7-zxWYgUjfXODmZGtnh5FmhGZ2HWk7f5kO5M5r06KiTu3LAW1WxL7qNGkgYFYjMEvX8kfeZwDvk-xq-bcsd8o5By-5D--UZbw6eBlUiU~lVTP7uKlJCVvqnL5HEG~PPEfYaoqd~sjtGISoruFVuBmI-ghEBC2IDnFXjIlLUNecjzJc21BhWh7D7NnOpiAvUmwGoN6gckoB0uti~I8cnUa0IaFQ7Xn46omYuYN0Llje7xefJMHmKuC2DO5OKmJo1VMvCDdJSPxhcXYA8j0sYRRtor7KNNoqazB5feRychwubMAQA__&Key-Pair-Id=APKAJXI72ADZRFKVIR2Q"
+            url = "http:\\/\\/www.kozco.com\\/tech\\/piano2-CoolEdit.mp3"
         ),
         MediaItem(
             name = "Debaixo do Tapete",
             author = "Cleber e Cauan",
             coverUrl = "https:\\/\\/images.suamusica.com.br\\/BhBN-RC4-w8r6PuY0W_wbc3JPDs=\\/240x240\\/3988508\\/1997513\\/cd_cover.jpg",
-            url = "https:\\/\\/files.suamusica.com.br\\/3988508\\/1997513\\/02%20-%20Debaixo%20do%20Tapete.mp3?Expires=1513048967&Signature=E82C3o0LmIdQ-vnA9pVyoB08ijWe59MvLU5zKTSAVPElF5KTuDC0i-8OQglXBECeELQAvdnc34nQPA49bcA0ImfMP8mABJD6qpb6falpgHwWU5G2Q7FvuIedJuOQwPuGQWw-vMxuD4FGhq7g9y9raLbowVjtn5nH09x2mCySFsxaHuEfgyWK1UB9EgOLdcvtvJaGxbk3QpNirMCUXHtAhuFoU8mYEaGz7M-bY7qrhxaSwwrWjyDvoWIJz2npRuYMcUOJ1-QMwddgA~ACx17e7GRf8N6~WpmEQ~P1q5o0Y5cHkNWWY9xYIwVtHeYKBWeLiTbiyisxU~Thik-b1~e1bA__&Key-Pair-Id=APKAJXI72ADZRFKVIR2Q"
+            url = "http:\\/\\/www.kozco.com\\/tech\\/piano2-Audacity1.2.5.mp3"
         ),
         MediaItem(
             name = "1 2 3",
             author = "Cleber e Cauan",
             coverUrl = "https:\\/\\/images.suamusica.com.br\\/BhBN-RC4-w8r6PuY0W_wbc3JPDs=\\/240x240\\/3988508\\/1997513\\/cd_cover.jpg",
-            url = "https:\\/\\/files.suamusica.com.br\\/3988508\\/1997513\\/03%20-%201%202%203.mp3?Expires=1513048967&Signature=AhAeqF5KFAesL-RDYf9Xi29r9KDIWJMHjPgUY4cAw~1X7fW30nzIRwRQ78Vbnw1mj5YWvui1K8hNXHN9CYdjE8ISAGeSGBUGgIepM7X8LHt312GShazGJgqjVOAvy7wz2GrfxvpRn3cZwiTJUUvf558R14VMkRZ4ruqdoo9YnsjcOveSs1iDC31dfWdVfuW4lHjNApL3KOns0MqXc5ijjkEqCA~LB0LeHd2OJRM99D5tiEOCgAwWd00LHUOk1WhspTt7jWI7HUGvcFYJzD7~DmGA6FQi8VOmV5oc6kwvdUZLt-cS2fNP8jZWkKwszfwPmxSka93tWD2Ka5IqK-KZhw__&Key-Pair-Id=APKAJXI72ADZRFKVIR2Q"
+            url = "http:\\/\\/www.kozco.com\\/tech\\/organfinale.mp3"
         ),
         MediaItem(
             name = "Quase - Sonho",
