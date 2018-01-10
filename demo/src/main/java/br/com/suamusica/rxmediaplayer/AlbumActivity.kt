@@ -10,7 +10,8 @@ import io.reactivex.Maybe
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.android.synthetic.main.activity_demo.*
+import kotlinx.android.synthetic.main.activity_demo.item_miniplayer_view
+import kotlinx.android.synthetic.main.activity_demo.recyclerViewMediaItems
 
 class AlbumActivity : RxMediaServiceActivity() {
 
@@ -21,7 +22,7 @@ class AlbumActivity : RxMediaServiceActivity() {
     setContentView(R.layout.activity_demo)
 
     recyclerViewMediaItems.layoutManager = LinearLayoutManager(this)
-    val mediaItemAdapter = MediaItemAdapter(MediaRepository.ITEMS)
+    val mediaItemAdapter = MediaItemAdapter(MediaRepository.musics())
 
     observeAdapterEvents(mediaItemAdapter)
 
@@ -33,30 +34,34 @@ class AlbumActivity : RxMediaServiceActivity() {
   private fun bindMiniPlayer() {
     item_miniplayer_view.onClickPlay = {
       rxMediaService()
-        .flatMapCompletable { it.play() }
-        .doOnError{ showError(it) }
-        .subscribe()
+          .flatMapCompletable { it.play() }
+          .observeOn(AndroidSchedulers.mainThread())
+          .doOnError { showError(it) }
+          .subscribe()
     }
 
     item_miniplayer_view.onClickPause = {
       rxMediaService()
-        .flatMapCompletable { it.pause() }
-        .doOnError{ showError(it)}
-        .subscribe()
+          .flatMapCompletable { it.pause() }
+          .observeOn(AndroidSchedulers.mainThread())
+          .doOnError { showError(it) }
+          .subscribe()
     }
 
     item_miniplayer_view.onClickNext = {
       rxMediaService()
-        .flatMapCompletable { it.next() }
-        .doOnError{ showError(it) }
-        .subscribe()
+          .flatMapCompletable { it.next() }
+          .observeOn(AndroidSchedulers.mainThread())
+          .doOnError { showError(it) }
+          .subscribe()
     }
 
     item_miniplayer_view.onClickPrev = {
       rxMediaService()
-        .flatMapCompletable { it.previous() }
-        .doOnError{ showError(it) }
-        .subscribe()
+          .flatMapCompletable { it.previous() }
+          .observeOn(AndroidSchedulers.mainThread())
+          .doOnError { showError(it) }
+          .subscribe()
     }
   }
 
@@ -64,6 +69,7 @@ class AlbumActivity : RxMediaServiceActivity() {
     mediaItemAdapter.itemClicks()
         .flatMapMaybe { it.withMediaService() }
         .flatMapCompletable { (item, service) -> service.play(item) }
+        .observeOn(AndroidSchedulers.mainThread())
         .doOnError { showError(it) }
         .retry()
         .subscribe()
