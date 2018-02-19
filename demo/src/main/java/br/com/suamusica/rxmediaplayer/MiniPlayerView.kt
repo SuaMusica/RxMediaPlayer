@@ -6,6 +6,9 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.widget.*
+import br.com.suamusica.rxmediaplayer.domain.MediaPlayerState
+import br.com.suamusica.rxmediaplayer.domain.OngoingState
+import com.squareup.picasso.Picasso
 import io.reactivex.Observable
 
 class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : ConstraintLayout(context, attrs, defStyleAttr) {
@@ -84,6 +87,28 @@ class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int)
 
       nameSongText = view.findViewById(R.id.name_song_player_textview)
       artistSongNameText = view.findViewById(R.id.artist_name_player_textview)
+    }
+  }
+
+  fun bind(state: MediaPlayerState) {
+    when (state) {
+      is OngoingState -> {
+        nameSongText.text = state.mediaItem.name
+        artistSongNameText.text = state.mediaItem.author
+
+        Picasso.with(context)
+          .load(state.mediaItem.coverUrl)
+          .fit()
+          .into(albumCoverImage)
+
+        musicProgress.progress = state.mediaProgress.progress()
+      }
+      else -> {
+        nameSongText.text = ""
+        artistSongNameText.text = ""
+        musicProgress.progress = 0
+        albumCoverImage.setImageResource(-1)
+      }
     }
   }
 }

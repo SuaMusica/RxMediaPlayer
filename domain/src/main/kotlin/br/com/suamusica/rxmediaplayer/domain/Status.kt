@@ -1,27 +1,33 @@
 package br.com.suamusica.rxmediaplayer.domain
 
-sealed class MediaPlayerState
+sealed class MediaServiceState
 
-object IdleState : MediaPlayerState()
+object IdleState : MediaServiceState()
 
-sealed class OngoingState(
-  val mediaItem: MediaItem,
-  val mediaProgress: MediaProgress
-) : MediaPlayerState()
+sealed class MediaBoundState(
+    open val item: MediaItem,
+    open val progress: MediaProgress
+) : MediaServiceState()
 
-class PlayingState(
-  mediaItem: MediaItem,
-  mediaProgress: MediaProgress
-) : OngoingState(mediaItem, mediaProgress)
+data class LoadingState(
+    override val item: MediaItem
+) : MediaBoundState(item, MediaProgress.NONE)
 
-class PausedState(
-  mediaItem: MediaItem,
-  mediaProgress: MediaProgress
-) : OngoingState(mediaItem, mediaProgress)
+data class PlayingState(
+    override val item: MediaItem,
+    override val progress: MediaProgress
+) : MediaBoundState(item, progress)
 
-class StoppedState(
-  mediaItem: MediaItem,
-  mediaProgress: MediaProgress
-) : OngoingState(mediaItem, mediaProgress)
+data class PausedState(
+    override val item: MediaItem,
+    override val progress: MediaProgress
+) : MediaBoundState(item, progress)
 
-class CompletedState(mediaItem: MediaItem) : OngoingState(mediaItem, MediaProgress.COMPLETED)
+data class StoppedState(
+    override val item: MediaItem,
+    override val progress: MediaProgress
+) : MediaBoundState(item, progress)
+
+data class CompletedState(
+    override val item: MediaItem
+) : MediaBoundState(item, MediaProgress.COMPLETED)

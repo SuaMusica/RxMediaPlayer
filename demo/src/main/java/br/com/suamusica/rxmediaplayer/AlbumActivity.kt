@@ -10,8 +10,7 @@ import io.reactivex.Maybe
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.android.synthetic.main.activity_demo.item_miniplayer_view
-import kotlinx.android.synthetic.main.activity_demo.recyclerViewMediaItems
+import kotlinx.android.synthetic.main.activity_demo.*
 
 class AlbumActivity : RxMediaServiceActivity() {
 
@@ -32,55 +31,63 @@ class AlbumActivity : RxMediaServiceActivity() {
   }
 
   private fun bindMiniPlayer() {
-    item_miniplayer_view.onClickPlay = {
+    miniPlayerView.onClickPlay = {
       rxMediaService()
-          .flatMapCompletable { it.play() }
-          .observeOn(AndroidSchedulers.mainThread())
-          .doOnError { showError(it) }
-          .subscribe()
+        .flatMapCompletable { it.play() }
+        .observeOn(AndroidSchedulers.mainThread())
+        .doOnComplete { "Play Success".toast() }
+        .doOnError { showError(it) }
+        .subscribe()
+        .compose()
     }
 
-    item_miniplayer_view.onClickPause = {
+    miniPlayerView.onClickPause = {
       rxMediaService()
-          .flatMapCompletable { it.pause() }
-          .observeOn(AndroidSchedulers.mainThread())
-          .doOnError { showError(it) }
-          .subscribe()
+        .flatMapCompletable { it.pause() }
+        .observeOn(AndroidSchedulers.mainThread())
+        .doOnComplete { "Pause Success".toast() }
+        .doOnError { showError(it) }
+        .subscribe()
+        .compose()
     }
 
-    item_miniplayer_view.onClickNext = {
+    miniPlayerView.onClickNext = {
       rxMediaService()
-          .flatMapCompletable { it.next() }
-          .observeOn(AndroidSchedulers.mainThread())
-          .doOnError { showError(it) }
-          .subscribe()
+        .flatMapCompletable { it.next() }
+        .observeOn(AndroidSchedulers.mainThread())
+        .doOnComplete { "Next Success".toast() }
+        .doOnError { showError(it) }
+        .subscribe()
+        .compose()
     }
 
-    item_miniplayer_view.onClickPrev = {
+    miniPlayerView.onClickPrev = {
       rxMediaService()
-          .flatMapCompletable { it.previous() }
-          .observeOn(AndroidSchedulers.mainThread())
-          .doOnError { showError(it) }
-          .subscribe()
+        .flatMapCompletable { it.previous() }
+        .observeOn(AndroidSchedulers.mainThread())
+        .doOnComplete { "Previous Success".toast() }
+        .doOnError { showError(it) }
+        .subscribe()
+        .compose()
     }
   }
 
   private fun observeAdapterEvents(mediaItemAdapter: MediaItemAdapter) {
     mediaItemAdapter.itemClicks()
-        .flatMapMaybe { it.withMediaService() }
-        .flatMapCompletable { (item, service) -> service.play(item) }
-        .observeOn(AndroidSchedulers.mainThread())
-        .doOnError { showError(it) }
-        .retry()
-        .subscribe()
-        .compose()
+      .flatMapMaybe { it.withMediaService() }
+      .flatMapCompletable { (item, service) -> service.play(item) }
+      .observeOn(AndroidSchedulers.mainThread())
+      .doOnError { showError(it) }
+      .retry()
+      .subscribe()
+      .compose()
 
     mediaItemAdapter.addClicks()
-        .flatMapMaybe { it.withMediaService() }
-        .flatMapCompletable { (item, service) -> service.add(item) }
-        .retry()
-        .subscribe()
-        .compose()
+      .flatMapMaybe { it.withMediaService() }
+      .flatMapCompletable { (item, service) -> service.add(item) }
+      .retry()
+      .subscribe()
+      .compose()
   }
 
   private fun showError(throwable: Throwable) {
@@ -90,10 +97,8 @@ class AlbumActivity : RxMediaServiceActivity() {
 
   override fun onRxMediaServiceBound(rxMediaService: RxMediaService) {
     rxMediaService.stateChanges()
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe {
-          Toast.makeText(this, it.toString(), Toast.LENGTH_LONG).show()
-        }
+      .observeOn(AndroidSchedulers.mainThread())
+      .subscribe { miniPlayerView.bind(it) }
   }
 
   private fun <T> T.withMediaService(): Maybe<Pair<T, RxMediaService>> {
@@ -101,4 +106,6 @@ class AlbumActivity : RxMediaServiceActivity() {
   }
 
   private fun Disposable.compose() = compositeDisposable.add(this)
+
+  private fun String.toast() = Toast.makeText(this@AlbumActivity, this, Toast.LENGTH_LONG).show()
 }

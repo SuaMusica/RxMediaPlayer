@@ -7,11 +7,10 @@ class MediaRepository {
   companion object {
     fun musics(): List<MediaItem> {
       val musicsNameAndResId = listOf(
-          "Alô dono do bar" to "http://picosong.com/cdn/349370ef3f7f248262f97c800f0c4585.mp3",
-          "Manda boi" to "http://picosong.com/cdn/b7097a8bb4a9ab77d6571057b84ce95f.mp3",
-          "Amor da sua cama" to "http://picosong.com/cdn/da3273285f164e303d1215f463737e94.mp3",
-          "Rabiola" to "http://picosong.com/cdn/15b6a417bbbb70727a788f2fcd0661e9.mp3",
-          "Na conta da loucura" to "http://picosong.com/cdn/a2c8238afd7296f5f64d63c07fc559f9.mp3"
+          "Click" to "http://www.sample-videos.com/audio/mp3/crowd-cheering.mp3",
+          "Manda boi" to "http://www.sample-videos.com/audio/mp3/wave.mp3",
+          "Piano Cool Edit" to "http://www.kozco.com/tech/piano2-CoolEdit.mp3",
+          "Original Finale" to "http://www.kozco.com/tech/organfinale.mp3"
       )
 
       return musicsNameAndResId
