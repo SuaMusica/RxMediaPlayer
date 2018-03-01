@@ -1,19 +1,23 @@
 package br.com.suamusica.rxmediaplayer.domain
 
-import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import br.com.suamusica.rxmediaplayer.domain.MediaProgress
-import br.com.suamusica.rxmediaplayer.domain.Status
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 
 
 interface RxMediaPlayer {
+  fun play(): Completable
   fun play(mediaItem: MediaItem): Completable
   fun pause(): Completable
   fun stop(): Completable
+  fun release(): Completable
 
   fun nowPlaying(): Maybe<MediaItem>
 
-  fun status(): Observable<Triple<MediaItem, Status, MediaProgress>>
+  fun stateChanges(): Observable<MediaServiceState>
+
+  fun isPlaying(): Single<Boolean>
+
+  fun isPaused(): Single<Boolean>
 }

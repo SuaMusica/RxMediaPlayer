@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">RxMediaPlayer</string>
+  <string name="title_album_activity">Some Album</string>
+  <string name="title_queue_activity">Queue</string>
+</resources>
