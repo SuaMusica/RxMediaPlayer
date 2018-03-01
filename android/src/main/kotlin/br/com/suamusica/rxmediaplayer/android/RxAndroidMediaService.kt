@@ -16,6 +16,7 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
+import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
@@ -63,6 +64,8 @@ abstract class RxAndroidMediaService : Service() {
   override fun onTaskRemoved(rootIntent: Intent?) {
     super.onTaskRemoved(rootIntent)
     rxMediaService.stop().subscribe()
+    removeNotification()
+    stopSelf()
   }
 
   override fun onDestroy() {
@@ -76,15 +79,13 @@ abstract class RxAndroidMediaService : Service() {
 
   protected open fun removeNotification() {
     stopForeground(true)
-    // TODO: it's calling notificationManager.cancel twice because stop foreground isn't removing the notification properly
-    notificationManager.cancel(NOTIFICATION_ID)
     notificationManager.cancel(NOTIFICATION_ID)
     telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
   }
 
   private fun notify(state: MediaServiceState) {
     when (state) {
-      is PlayingState -> showNotification(state)
+      is PlayingState, is PausedState -> showNotification(state as MediaBoundState)
       else -> removeNotification()
     }
   }
