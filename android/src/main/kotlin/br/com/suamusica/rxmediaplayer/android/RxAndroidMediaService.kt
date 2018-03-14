@@ -55,7 +55,7 @@ abstract class RxAndroidMediaService : Service() {
         .subscribe()
   }
 
-  override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     return Service.START_STICKY
   }
 
