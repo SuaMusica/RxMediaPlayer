@@ -95,12 +95,18 @@ internal class RxMediaServiceImpl(
       .andThen(maybeFirst())
       .flatMapCompletable { rxMediaPlayer.play(it) }
 
-  override fun next(): Completable =
-      maybeNext().flatMapCompletable { rxMediaPlayer.play(it) }
+  override fun next(): Completable = maybeNext()
+          .flatMapCompletable {
+            rxMediaPlayer.stop()
+              .andThen(rxMediaPlayer.play(it))
+          }
           .subscribeOn(scheduler)
 
-  override fun previous(): Completable =
-      maybePrevious().flatMapCompletable { rxMediaPlayer.play(it) }
+  override fun previous(): Completable = maybePrevious()
+          .flatMapCompletable {
+            rxMediaPlayer.stop()
+                .andThen(rxMediaPlayer.play(it))
+          }
           .subscribeOn(scheduler)
 
   override fun pause(): Completable = rxMediaPlayer.pause().subscribeOn(scheduler)
