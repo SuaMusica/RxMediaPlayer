@@ -12,7 +12,6 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.support.annotation.RequiresApi
-import android.support.v4.content.ContextCompat
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
