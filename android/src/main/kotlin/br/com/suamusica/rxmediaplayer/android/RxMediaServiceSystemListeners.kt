@@ -26,7 +26,7 @@ object RxMediaServiceSystemListeners {
       } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
         // Resume playback
         if (wasPlaying && rxMediaService.isPaused().blockingGet() && lossType != AudioManager.AUDIOFOCUS_LOSS) {
-          rxMediaService.play().subscribe()
+          rxMediaService.play().onErrorComplete().subscribe()
         }
       }
     }
@@ -50,7 +50,7 @@ object RxMediaServiceSystemListeners {
         //Not in call: Play music
         if (wasPlaying && rxMediaService.isPaused().blockingGet()) {
           wasPlaying = false
-          rxMediaService.play().subscribe()
+          rxMediaService.play().onErrorComplete().subscribe()
         }
       }
       super.onCallStateChanged(state, incomingNumber)
