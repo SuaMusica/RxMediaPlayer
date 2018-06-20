@@ -113,7 +113,7 @@ internal class RxMediaServiceImpl(
 
   override fun stop(): Completable = rxMediaPlayer.stop().subscribeOn(scheduler)
 
-  override fun stateChanges() = rxMediaPlayer.stateChanges()
+  override fun stateChanges(): Observable<MediaServiceState> = rxMediaPlayer.stateChanges().map { it.setRandomizedState(randomized) }
 
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
 
