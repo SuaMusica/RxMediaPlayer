@@ -96,9 +96,9 @@ class AlbumActivity : RxMediaServiceActivity() {
   }
 
   override fun onRxMediaServiceBound(rxMediaService: RxMediaService) {
-    rxMediaService.stateChanges()
-      .observeOn(AndroidSchedulers.mainThread())
-      .subscribe { miniPlayerView.bind(it) }
+//    rxMediaService.stateChanges()
+//      .observeOn(AndroidSchedulers.mainThread())
+//      .subscribe { miniPlayerView.bind(it) }
   }
 
   private fun <T> T.withMediaService(): Maybe<Pair<T, RxMediaService>> {

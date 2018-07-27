@@ -19,6 +19,7 @@ class MediaRepository {
 
     private fun createMediaItem(name: String, uri: String): MediaItem {
       return MediaItem(
+          id = "19919",
           name = name,
           author = "Wesley Safadão",
           coverUrl = "https://images.suamusica.com.br/LoyfSPrBR-0Gq3ExIazGFD_Kkqw=/240x240/41261/2013007/cd_cover.png",

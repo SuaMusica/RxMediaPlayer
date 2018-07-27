@@ -1,9 +1,12 @@
 package br.com.suamusica.rxmediaplayer.android
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.PowerManager
+import android.support.v4.media.AudioAttributesCompat
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.END
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.IDLE
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.INITIALIZED
@@ -115,7 +118,17 @@ class RxAndroidMediaPlayer(
   private fun initializeMediaPlayer(context: Context) {
     mediaPlayer = MediaPlayer()
     mediaPlayer.setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
-    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      mediaPlayer.setAudioAttributes(
+          AudioAttributesCompat.Builder()
+              .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
+              .setLegacyStreamType(AudioAttributesCompat.USAGE_MEDIA)
+              .build().unwrap() as AudioAttributes)
+    } else {
+      mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+    }
+
     mediaPlayer.setOnCompletionListener {
       currentMediaItem?.let {
         state = STOPPED
