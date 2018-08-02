@@ -45,7 +45,8 @@ import java.util.concurrent.TimeUnit
 
 class RxExoPlayer (
     private val context: Context,
-    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url }
+    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url },
+    private val cookies: List<HttpCookie> = emptyList()
 ) : RxMediaPlayer {
 
   private lateinit var exoPlayer: ExoPlayer
@@ -202,7 +203,7 @@ class RxExoPlayer (
     currentMediaItem = mediaItem
     stateDispatcher.onNext(LoadingState(mediaItem))
 
-    val mediaSource = buildMediaSource(retrieveUri(resolveDataSourceForMediaItem(mediaItem)), buildHttpDataSource())
+    val mediaSource = buildMediaSource(retrieveUri(resolveDataSourceForMediaItem(mediaItem)), buildHttpDataSource(cookies))
 
     exoPlayer.stop(true)
     exoPlayer.prepare(mediaSource)
@@ -255,7 +256,7 @@ class RxExoPlayer (
     }
   }
 
-  private fun buildHttpDataSource(httpCookies: List<HttpCookie> = emptyList()): DefaultHttpDataSourceFactory {
+  private fun buildHttpDataSource(httpCookies: List<HttpCookie>): DefaultHttpDataSourceFactory {
     val dataSourceFactory = DefaultHttpDataSourceFactory(javaClass.simpleName, DefaultBandwidthMeter())
 
     if (httpCookies.isEmpty())
