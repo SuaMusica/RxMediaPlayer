@@ -92,7 +92,7 @@ class RxAndroidMediaPlayer(
     state = STOPPED
 
     currentMediaItem?.let {
-      stateDispatcher.onNext(StoppedState(it, MediaProgress(0, mediaPlayer.duration)))
+      stateDispatcher.onNext(StoppedState(it, MediaProgress(0, mediaPlayer.duration.toLong())))
     }
   }
 
@@ -126,7 +126,7 @@ class RxAndroidMediaPlayer(
               .setLegacyStreamType(AudioAttributesCompat.USAGE_MEDIA)
               .build().unwrap() as AudioAttributes)
     } else {
-      mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+      mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
     }
 
     mediaPlayer.setOnCompletionListener {
@@ -156,7 +156,7 @@ class RxAndroidMediaPlayer(
   }
 
   private fun currentMediaProgress() =
-      MediaProgress(mediaPlayer.currentPosition, mediaPlayer.duration)
+      MediaProgress(mediaPlayer.currentPosition.toLong(), mediaPlayer.duration.toLong())
 
   private fun observePlayingState(mediaItem: MediaItem) {
     if (progressDisposable.isDisposed.not()) {

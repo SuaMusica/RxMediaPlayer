@@ -54,10 +54,10 @@ internal class RxMediaServiceImpl(
 
   override fun reorder(indexA: Int, indexB: Int): Completable =
       Completable.fromCallable {
-        val itemA = queue.get(indexA)
-        val itemB = queue.get(indexB)
+        val itemA = queue[indexA]
+        val itemB = queue[indexB]
 
-        queue.set(indexA, itemB)
+        queue[indexA] = itemB
         queue.set(indexB, itemA)
       }.subscribeOn(scheduler)
 
