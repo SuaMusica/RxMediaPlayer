@@ -2,6 +2,7 @@ package br.com.suamusica.rxmediaplayer.android
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
 import br.com.suamusica.rxmediaplayer.domain.LoadingState
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
@@ -79,7 +80,10 @@ class RxExoPlayer (
         MediaPlayerState.PAUSED, MediaPlayerState.PREPARED -> {
           start(mediaItem)
         }
-        else -> throw IllegalStateException("Can't play $mediaItem from state $state")
+        MediaPlayerState.ERROR -> {
+          throw IllegalStateException("Can't play $mediaItem from state $state")
+        }
+        else -> Log.d(RxExoPlayer::class.java.simpleName, "Can't play $mediaItem from state $state")
       }
 
       completableEmitter.onComplete()
@@ -128,7 +132,7 @@ class RxExoPlayer (
   override fun isPaused(): Single<Boolean> = Single.fromCallable { state == MediaPlayerState.PAUSED }
 
   private fun initializeExoPlayer(context: Context) {
-    val renderersFactory = DefaultRenderersFactory(context, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+    val renderersFactory = DefaultRenderersFactory(context)
     val trackSelector = AdaptiveTrackSelection.Factory(DefaultBandwidthMeter())
 
     exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, DefaultTrackSelector(trackSelector))
@@ -138,9 +142,9 @@ class RxExoPlayer (
 
   private fun eventListener(): Player.EventListener {
     return object : Player.EventListener {
-      override fun onTimelineChanged(timeline: Timeline, manifest: Any, reason: Int) { }
+      override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) { }
 
-      override fun onTracksChanged(trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) { }
+      override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) { }
 
       override fun onLoadingChanged(isLoading: Boolean) {
         if (isLoading) {
@@ -151,7 +155,6 @@ class RxExoPlayer (
       }
 
       override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-
         when (playbackState) {
           Player.STATE_ENDED -> {
             currentMediaItem?.let {
@@ -176,19 +179,11 @@ class RxExoPlayer (
 
       override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) { }
 
-      override fun onPlayerError(error: ExoPlaybackException) {
-        var exceptionMessage = ""
-        when (error.type) {
-          ExoPlaybackException.TYPE_SOURCE -> exceptionMessage += "TYPE_SOURCE: " + error.sourceException.message
-          ExoPlaybackException.TYPE_RENDERER -> exceptionMessage += "TYPE_RENDERER: " + error.rendererException.message
-          ExoPlaybackException.TYPE_UNEXPECTED -> exceptionMessage += "TYPE_UNEXPECTED: " + error.unexpectedException.message
-        }
-
+      override fun onPlayerError(error: ExoPlaybackException?) {
         currentMediaItem?.let {
           state = MediaPlayerState.ERROR
           stateDispatcher.onNext(CompletedState(it))
         }
-
       }
 
       override fun onPositionDiscontinuity(reason: Int) { }
