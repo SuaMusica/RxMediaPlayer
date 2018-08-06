@@ -6,8 +6,9 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.widget.*
-import br.com.suamusica.rxmediaplayer.domain.MediaPlayerState
-import br.com.suamusica.rxmediaplayer.domain.OngoingState
+import br.com.suamusica.rxmediaplayer.android.MediaPlayerState
+import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
+import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import com.squareup.picasso.Picasso
 import io.reactivex.Observable
 
@@ -90,25 +91,22 @@ class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int)
     }
   }
 
-  fun bind(state: MediaPlayerState) {
-    when (state) {
-      is OngoingState -> {
-        nameSongText.text = state.mediaItem.name
-        artistSongNameText.text = state.mediaItem.author
+  fun bind(state: MediaBoundState?) {
+    state?.let {
+      nameSongText.text = it.item.name
+      artistSongNameText.text = it.item.author
 
-        Picasso.with(context)
-          .load(state.mediaItem.coverUrl)
+      Picasso.with(context)
+          .load(it.item.coverUrl)
           .fit()
           .into(albumCoverImage)
 
-        musicProgress.progress = state.mediaProgress.progress()
-      }
-      else -> {
-        nameSongText.text = ""
-        artistSongNameText.text = ""
-        musicProgress.progress = 0
-        albumCoverImage.setImageResource(-1)
-      }
+      musicProgress.progress = it.progress.current.toInt()
+    } ?: run {
+      nameSongText.text = ""
+      artistSongNameText.text = ""
+      musicProgress.progress = 0
+      albumCoverImage.setImageResource(-1)
     }
   }
 }

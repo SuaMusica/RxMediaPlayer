@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.widget.Toast
+import br.com.suamusica.rxmediaplayer.android.MediaPlayerState
 import br.com.suamusica.rxmediaplayer.android.RxMediaServiceActivity
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
 import io.reactivex.Maybe
@@ -98,7 +99,7 @@ class AlbumActivity : RxMediaServiceActivity() {
   override fun onRxMediaServiceBound(rxMediaService: RxMediaService) {
     rxMediaService.stateChanges()
       .observeOn(AndroidSchedulers.mainThread())
-      .subscribe { miniPlayerView.bind(it) }
+      .subscribe { miniPlayerView.bind(it.setRandomizedState(false)) }
   }
 
   private fun <T> T.withMediaService(): Maybe<Pair<T, RxMediaService>> {

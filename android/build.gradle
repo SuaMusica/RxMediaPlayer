@@ -29,6 +29,13 @@ android {
   }
 }
 
+configurations.all {
+  resolutionStrategy {
+    force "com.android.support:support-media-compat:$appcompat_version"
+    force "com.android.support:support-v4:$appcompat_version"
+  }
+}
+
 dependencies {
   implementation fileTree(dir: 'libs', include: ['*.jar'])
 
@@ -38,9 +45,19 @@ dependencies {
   implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 
+  implementation "com.google.android.exoplayer:exoplayer-core:$exoplayer_version"
+  implementation "com.google.android.exoplayer:exoplayer-hls:$exoplayer_version"
+  implementation "com.google.android.exoplayer:extension-ima:$exoplayer_version"
+
   testImplementation "org.mockito:mockito-core:$mockitoVersion"
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-core:$hamcrestCoreVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestCoreVersion"
   testImplementation "com.nhaarman:mockito-kotlin-kt1.1:$mockitoKotlinVersion"
+}
+
+ext {
+  libraryName = 'rx-mediaplayer'
+  artifact = 'rx-mediaplayer'
+  libraryDescription = 'Reactive extensions for Audio Player using AndroidMediaPlayer and ExoPlayer'
 }
