@@ -49,6 +49,7 @@ class RxExoPlayer (
     private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url },
     private val cookies: List<HttpCookie> = emptyList()
 ) : RxMediaPlayer {
+  private val TAG = RxExoPlayer::class.java.simpleName
 
   private lateinit var exoPlayer: ExoPlayer
   private val stateDispatcher = BehaviorSubject.create<MediaServiceState>()
@@ -77,13 +78,15 @@ class RxExoPlayer (
           prepare(mediaItem)
           start(mediaItem)
         }
-        MediaPlayerState.PAUSED, MediaPlayerState.PREPARED -> {
+        MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.PREPARED -> {
           start(mediaItem)
         }
         MediaPlayerState.ERROR -> {
-          throw IllegalStateException("Can't play $mediaItem from state $state")
+          throw IllegalStateException("Can't play ${mediaItem.name} from state $state")
         }
-        else -> Log.d(RxExoPlayer::class.java.simpleName, "Can't play $mediaItem from state $state")
+        else -> {
+          Log.d(TAG, "play ${mediaItem.name} from state $state")
+        }
       }
 
       completableEmitter.onComplete()
@@ -137,7 +140,6 @@ class RxExoPlayer (
 
     exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, DefaultTrackSelector(trackSelector))
     exoPlayer.addListener(eventListener())
-
   }
 
   private fun eventListener(): Player.EventListener {
@@ -157,21 +159,17 @@ class RxExoPlayer (
       override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
         when (playbackState) {
           Player.STATE_ENDED -> {
-            currentMediaItem?.let {
-              state = MediaPlayerState.STOPPED
-              stateDispatcher.onNext(CompletedState(it))
-            }
+            state = MediaPlayerState.STOPPED
+            currentMediaItem?.let { stateDispatcher.onNext(CompletedState(it)) }
           }
-          Player.STATE_READY -> state = MediaPlayerState.PREPARED
+
+          Player.STATE_READY -> {
+            state = MediaPlayerState.PREPARED
+            currentMediaItem?.let { stateDispatcher.onNext(PlayingState(it, currentMediaProgress())) }
+          }
 
           Player.STATE_BUFFERING -> currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
-
-          Player.STATE_IDLE -> {
-            currentMediaItem?.let {
-              state = MediaPlayerState.IDLE
-              stateDispatcher.onNext(CompletedState(it))
-            }
-          }
+          Player.STATE_IDLE -> state = MediaPlayerState.IDLE
         }
       }
 
@@ -195,12 +193,10 @@ class RxExoPlayer (
   }
 
   private fun prepare(mediaItem: MediaItem) {
+    exoPlayer.playWhenReady = false
     currentMediaItem = mediaItem
-    stateDispatcher.onNext(LoadingState(mediaItem))
 
     val mediaSource = buildMediaSource(retrieveUri(resolveDataSourceForMediaItem(mediaItem)), buildHttpDataSource(cookies))
-
-    exoPlayer.stop(true)
     exoPlayer.prepare(mediaSource)
   }
 
