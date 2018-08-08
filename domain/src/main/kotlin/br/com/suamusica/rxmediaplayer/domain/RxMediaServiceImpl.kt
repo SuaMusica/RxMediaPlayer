@@ -14,6 +14,7 @@ internal class RxMediaServiceImpl(
 ) : RxMediaService {
   private val queue: LinkedList<MediaItem> = LinkedList()
   private var randomized = false
+  private var repeatState = RepeatState.OFF
   private val disposables = CompositeDisposable()
 
   init {
@@ -21,7 +22,21 @@ internal class RxMediaServiceImpl(
         rxMediaPlayer.stateChanges()
             .subscribeOn(scheduler)
             .filter { it is CompletedState }
-            .flatMapCompletable { next() }
+            .flatMapCompletable {
+              when(repeatState) {
+                RepeatState.OFF -> next()
+                RepeatState.ONE -> seekTo(0)
+                RepeatState.ALL -> {
+                  val mediaItem = it.setRandomizedState(randomized).item
+                  val isLastItem = queue.indexOf(mediaItem) + 1 == queue.size
+                  if (isLastItem) {
+                    playFromBegin()
+                  } else {
+                    next()
+                  }
+                }
+              }
+            }
             .subscribe()
     )
   }
@@ -115,9 +130,24 @@ internal class RxMediaServiceImpl(
 
   override fun seekTo(position: Long): Completable = rxMediaPlayer.seekTo(position).subscribeOn(scheduler)
 
-  override fun stateChanges(): Observable<MediaServiceState> = rxMediaPlayer.stateChanges().map { it.setRandomizedState(randomized) }
+  override fun changeRepeatState(repeatMode: RepeatState): Completable =
+      Completable.fromAction {
+        this@RxMediaServiceImpl.repeatState = repeatMode
+      }.subscribeOn(scheduler)
+
+  override fun stateChanges(): Observable<MediaServiceState> =
+      rxMediaPlayer.stateChanges()
+          .map { it.setRandomizedState(randomized) }
+          .map { it.setRepeatModeState(repeatState) }
 
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
+
+  private fun playFromBegin() = maybeFirst()
+      .flatMapCompletable {
+        rxMediaPlayer.stop()
+            .andThen(rxMediaPlayer.play(it))
+      }
+      .subscribeOn(scheduler)
 
   private fun maybeFirst() = Maybe.create<MediaItem> {
     when (queue.peek()) {
