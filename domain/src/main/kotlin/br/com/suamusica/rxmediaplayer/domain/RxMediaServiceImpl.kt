@@ -30,7 +30,7 @@ internal class RxMediaServiceImpl(
                   val mediaItem = it.setRandomizedState(randomized).item
                   val isLastItem = queue.indexOf(mediaItem) + 1 == queue.size
                   if (isLastItem) {
-                    playFromBegin()
+                    playFirst()
                   } else {
                     next()
                   }
@@ -142,7 +142,7 @@ internal class RxMediaServiceImpl(
 
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
 
-  private fun playFromBegin() = maybeFirst()
+  private fun playFirst() = maybeFirst()
       .flatMapCompletable {
         rxMediaPlayer.stop()
             .andThen(rxMediaPlayer.play(it))
