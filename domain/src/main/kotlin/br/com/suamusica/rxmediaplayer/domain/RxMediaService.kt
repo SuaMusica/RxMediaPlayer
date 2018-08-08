@@ -46,12 +46,13 @@ interface RxMediaService {
 
   fun seekTo(position: Long): Completable
 
+  fun changeRepeatState(repeatMode: RepeatState) : Completable
+
   // event streams
   fun stateChanges(): Observable<MediaServiceState>
 
   // release resources
   fun release(): Completable
-
 
   companion object {
     fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =
