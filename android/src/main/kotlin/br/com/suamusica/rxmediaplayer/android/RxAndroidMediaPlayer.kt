@@ -11,7 +11,7 @@ import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.END
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.IDLE
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.INITIALIZED
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.PAUSED
-import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.PREPARED
+import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.READY
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.STARTED
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.STOPPED
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
@@ -66,7 +66,7 @@ class RxAndroidMediaPlayer(
           prepare(mediaItem)
           start(mediaItem)
         }
-        PAUSED, PREPARED -> {
+        PAUSED, READY -> {
           start(mediaItem)
         }
         else -> throw IllegalStateException("Can't play $mediaItem from state $state")
@@ -97,6 +97,8 @@ class RxAndroidMediaPlayer(
       stateDispatcher.onNext(StoppedState(it, MediaProgress(0, mediaPlayer.duration.toLong())))
     }
   }
+
+  override fun seekTo(position: Long): Completable = Completable.fromAction { mediaPlayer.seekTo(position.toInt()) }
 
   override fun release(): Completable {
     return Completable.fromAction { mediaPlayer.release() }.andThen { state = END }
@@ -147,7 +149,7 @@ class RxAndroidMediaPlayer(
     mediaPlayer.setDataSource(resolveDataSourceForMediaItem(mediaItem))
     state = INITIALIZED
     mediaPlayer.prepare()
-    state = PREPARED
+    state = READY
   }
 
   private fun start(mediaItem: MediaItem) {

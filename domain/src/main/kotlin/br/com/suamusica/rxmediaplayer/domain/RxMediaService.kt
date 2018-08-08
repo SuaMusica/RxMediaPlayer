@@ -44,6 +44,8 @@ interface RxMediaService {
 
   fun stop(): Completable
 
+  fun seekTo(position: Long): Completable
+
   // event streams
   fun stateChanges(): Observable<MediaServiceState>
 

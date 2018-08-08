@@ -78,15 +78,13 @@ class RxExoPlayer (
           prepare(mediaItem)
           start(mediaItem)
         }
-        MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.PREPARED -> {
+        MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.READY -> {
           start(mediaItem)
         }
         MediaPlayerState.ERROR -> {
           throw IllegalStateException("Can't play ${mediaItem.name} from state $state")
         }
-        else -> {
-          Log.d(TAG, "play ${mediaItem.name} from state $state")
-        }
+        else -> { Log.d(TAG, "playing ${mediaItem.name} from state $state") }
       }
 
       completableEmitter.onComplete()
@@ -115,6 +113,11 @@ class RxExoPlayer (
     }
   }
 
+  override fun seekTo(position: Long): Completable = Completable.fromAction {
+    exoPlayer.seekTo(position)
+    exoPlayer.playWhenReady = true
+  }
+
   override fun release(): Completable {
     return Completable.fromAction { exoPlayer.release() }.andThen { state = MediaPlayerState.END }
   }
@@ -125,8 +128,13 @@ class RxExoPlayer (
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {
-        if (it !is PlayingState) {
-          progressDisposable.dispose()
+        when (it) {
+          is LoadingState, is PausedState, is StoppedState, is CompletedState -> {
+            progressDisposable.dispose()
+          }
+          else -> {
+            if (progressDisposable.isDisposed) currentMediaItem?.let{ mediaItem -> observePlayingState(mediaItem) }
+          }
         }
       }
 
@@ -164,11 +172,14 @@ class RxExoPlayer (
           }
 
           Player.STATE_READY -> {
-            state = MediaPlayerState.PREPARED
+            state = MediaPlayerState.READY
             currentMediaItem?.let { stateDispatcher.onNext(PlayingState(it, currentMediaProgress())) }
           }
 
-          Player.STATE_BUFFERING -> currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
+          Player.STATE_BUFFERING -> {
+            state = MediaPlayerState.BUFFERING
+            currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
+          }
           Player.STATE_IDLE -> state = MediaPlayerState.IDLE
         }
       }
@@ -216,9 +227,14 @@ class RxExoPlayer (
     }
 
     progressDisposable = Observable.interval(1, TimeUnit.SECONDS)
-        .map { PlayingState(mediaItem, currentMediaProgress()) }
+        .map {
+          if (state == MediaPlayerState.PAUSED) {
+            PausedState(mediaItem, currentMediaProgress())
+          } else {
+            PlayingState(mediaItem, currentMediaProgress())
+          }
+        }
         .doOnNext { stateDispatcher.onNext(it) }
-        .doOnNext { }
         .retry()
         .subscribe()
   }
