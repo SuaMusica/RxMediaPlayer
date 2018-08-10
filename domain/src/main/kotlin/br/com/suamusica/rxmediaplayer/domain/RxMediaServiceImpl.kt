@@ -130,7 +130,6 @@ internal class RxMediaServiceImpl(
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
 
   private fun handleCompletedState(it: MediaServiceState): CompletableSource? {
-    println("RxMediaServiceImpl/Player: handleCompletedState - mediaServiceState: ${it.javaClass} - repeatState: $repeatState")
     return when (repeatState) {
       RepeatState.OFF -> next()
       RepeatState.ONE -> seekTo(0)
@@ -148,8 +147,8 @@ internal class RxMediaServiceImpl(
 
   private fun playFirst() = maybeFirst()
       .flatMapCompletable {
-        println("RxMediaServiceImpl/Player: playFirst: ${it.name} - repeatState: $repeatState")
-        rxMediaPlayer.play(it)
+        rxMediaPlayer.stop()
+            .andThen(rxMediaPlayer.play(it))
       }
       .subscribeOn(scheduler)
 
