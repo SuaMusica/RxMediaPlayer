@@ -10,7 +10,6 @@ import br.com.suamusica.rxmediaplayer.domain.MediaProgress
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
 import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
-import br.com.suamusica.rxmediaplayer.domain.RepeatState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
@@ -68,6 +67,7 @@ class RxExoPlayer (
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
+    Log.d(TAG, "play - mediaItem: ${mediaItem.name} -- mediaState: $mediaState")
     try {
       when (mediaState) {
         MediaPlayerState.END -> {
@@ -95,6 +95,7 @@ class RxExoPlayer (
   }
 
   override fun pause(): Completable = Completable.fromAction {
+    Log.d(TAG, "pause - mediaState: $mediaState")
     exoPlayer.playWhenReady = false
 
     mediaState = MediaPlayerState.PAUSED
@@ -105,6 +106,7 @@ class RxExoPlayer (
   }
 
   override fun stop(): Completable = Completable.fromAction {
+    Log.d(TAG, "stop - mediaState: $mediaState")
     exoPlayer.stop()
 
     mediaState = MediaPlayerState.STOPPED
@@ -129,6 +131,7 @@ class RxExoPlayer (
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {
+        Log.d(TAG, "stateChanges - playingState: ${it.javaClass} -- mediaState: $mediaState")
 
         when (it) {
           is LoadingState, is PausedState, is StoppedState, is CompletedState -> {
@@ -159,6 +162,7 @@ class RxExoPlayer (
       override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) { }
 
       override fun onLoadingChanged(isLoading: Boolean) {
+        Log.d(TAG, "onLoadingChanged- isLoading: $isLoading - state: $mediaState")
         if (isLoading) {
           currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
         } else {
@@ -184,6 +188,7 @@ class RxExoPlayer (
           }
           Player.STATE_IDLE -> mediaState = MediaPlayerState.IDLE
         }
+        Log.d(TAG, "onPlayerStateChanged- playWhenReady: $playWhenReady - playbackState: $playbackState - state: $mediaState")
       }
 
       override fun onRepeatModeChanged(repeatMode: Int) { }
@@ -206,6 +211,7 @@ class RxExoPlayer (
   }
 
   private fun prepare(mediaItem: MediaItem) {
+    Log.d(TAG, "prepare - state: $mediaState")
     exoPlayer.playWhenReady = false
     currentMediaItem = mediaItem
 
@@ -214,6 +220,7 @@ class RxExoPlayer (
   }
 
   private fun start(mediaItem: MediaItem) {
+    Log.d(TAG, "start - state: $mediaState")
     exoPlayer.playWhenReady = true
     observePlayingState(mediaItem)
     mediaState = MediaPlayerState.STARTED
