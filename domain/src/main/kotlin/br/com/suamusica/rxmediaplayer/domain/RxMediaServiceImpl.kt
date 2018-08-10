@@ -1,6 +1,7 @@
 package br.com.suamusica.rxmediaplayer.domain
 
 import io.reactivex.Completable
+import io.reactivex.CompletableSource
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Scheduler
@@ -22,21 +23,7 @@ internal class RxMediaServiceImpl(
         rxMediaPlayer.stateChanges()
             .subscribeOn(scheduler)
             .filter { it is CompletedState }
-            .flatMapCompletable {
-              when(repeatState) {
-                RepeatState.OFF -> next()
-                RepeatState.ONE -> seekTo(0)
-                RepeatState.ALL -> {
-                  val mediaItem = it.setRandomizedState(randomized).item
-                  val isLastItem = queue.indexOf(mediaItem) + 1 == queue.size
-                  if (isLastItem) {
-                    playFromBegin()
-                  } else {
-                    next()
-                  }
-                }
-              }
-            }
+            .flatMapCompletable(this::handleCompletedState)
             .subscribe()
     )
   }
@@ -142,7 +129,23 @@ internal class RxMediaServiceImpl(
 
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
 
-  private fun playFromBegin() = maybeFirst()
+  private fun handleCompletedState(it: MediaServiceState): CompletableSource? {
+    return when (repeatState) {
+      RepeatState.OFF -> next()
+      RepeatState.ONE -> seekTo(0)
+      RepeatState.ALL -> {
+        val mediaItem = it.setRandomizedState(randomized).item
+        val isLastItem = queue.indexOf(mediaItem) + 1 == queue.size
+        if (isLastItem) {
+          playFirst()
+        } else {
+          next()
+        }
+      }
+    }
+  }
+
+  private fun playFirst() = maybeFirst()
       .flatMapCompletable {
         rxMediaPlayer.stop()
             .andThen(rxMediaPlayer.play(it))
