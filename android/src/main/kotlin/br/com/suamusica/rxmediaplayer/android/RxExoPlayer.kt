@@ -10,7 +10,6 @@ import br.com.suamusica.rxmediaplayer.domain.MediaProgress
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
 import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
-import br.com.suamusica.rxmediaplayer.domain.RepeatState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
