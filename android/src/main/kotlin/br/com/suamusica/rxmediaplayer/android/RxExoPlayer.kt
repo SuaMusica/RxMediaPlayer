@@ -50,6 +50,7 @@ class RxExoPlayer (
     private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url },
     private val cookies: List<HttpCookie> = emptyList()
 ) : RxMediaPlayer {
+
   private val TAG = RxExoPlayer::class.java.simpleName
 
   private lateinit var exoPlayer: ExoPlayer
@@ -125,6 +126,10 @@ class RxExoPlayer (
 
   override fun nowPlaying(): Maybe<MediaItem> = Maybe.create { emitter ->
     currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
+  }
+
+  override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
+    stateDispatcher.value?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
   }
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()

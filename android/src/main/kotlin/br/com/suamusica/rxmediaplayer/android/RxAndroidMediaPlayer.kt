@@ -108,6 +108,10 @@ class RxAndroidMediaPlayer(
     currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
   }
 
+  override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
+    stateDispatcher.value?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
+  }
+
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {
         if (it !is PlayingState) {
