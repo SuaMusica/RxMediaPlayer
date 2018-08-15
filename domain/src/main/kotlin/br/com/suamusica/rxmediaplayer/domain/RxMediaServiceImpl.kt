@@ -7,9 +7,7 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Action
 import io.reactivex.subjects.PublishSubject
-import java.util.Collections
 import java.util.LinkedList
 
 internal class RxMediaServiceImpl(
@@ -131,7 +129,6 @@ internal class RxMediaServiceImpl(
         this@RxMediaServiceImpl.repeatState = repeatMode
       }.andThen(
           Completable.fromAction {
-            println("changeRepeatState - repeatMode: $repeatMode")
             rxMediaPlayer.currentState().blockingGet()?.setRepeatModeState(repeatMode)?.let { stateDispatcher.onNext(it) }
           }
       ).subscribeOn(scheduler)
