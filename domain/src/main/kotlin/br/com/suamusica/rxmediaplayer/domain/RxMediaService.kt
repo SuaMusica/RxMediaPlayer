@@ -54,6 +54,9 @@ interface RxMediaService {
   // release resources
   fun release(): Completable
 
+  // queue update streams
+  fun queueChanges(): Observable<List<MediaItem>>
+
   companion object {
     fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =
         RxMediaServiceImpl(rxMediaPlayer, scheduler)

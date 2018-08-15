@@ -7,13 +7,17 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.subjects.PublishSubject
 import java.util.LinkedList
 
 internal class RxMediaServiceImpl(
     private val rxMediaPlayer: RxMediaPlayer,
     private val scheduler: Scheduler
 ) : RxMediaService {
-  private val queue: LinkedList<MediaItem> = LinkedList()
+  private val stateDispatcher = PublishSubject.create<MediaServiceState>()
+  private val queueDispatcher = PublishSubject.create<List<MediaItem>>()
+  private var originalQueue: LinkedList<MediaItem> = LinkedList()
+  private var queue: LinkedList<MediaItem> = LinkedList()
   private var randomized = false
   private var repeatState = RepeatState.OFF
   private val disposables = CompositeDisposable()
@@ -73,11 +77,6 @@ internal class RxMediaServiceImpl(
         }
       }.subscribeOn(scheduler)
 
-  override fun changeRandomState(randomized: Boolean): Completable =
-      Completable.fromAction {
-        this@RxMediaServiceImpl.randomized = randomized
-      }.subscribeOn(scheduler)
-
   override fun isRandomized(): Single<Boolean> = Single.fromCallable { randomized }.subscribeOn(scheduler)
 
   override fun isPlaying(): Single<Boolean> = rxMediaPlayer.isPlaying().subscribeOn(scheduler)
@@ -98,18 +97,18 @@ internal class RxMediaServiceImpl(
       .flatMapCompletable { rxMediaPlayer.play(it) }
 
   override fun next(): Completable = maybeNext()
-          .flatMapCompletable {
-            rxMediaPlayer.stop()
-              .andThen(rxMediaPlayer.play(it))
-          }
-          .subscribeOn(scheduler)
+      .flatMapCompletable {
+        rxMediaPlayer.stop()
+            .andThen(rxMediaPlayer.play(it))
+      }
+      .subscribeOn(scheduler)
 
   override fun previous(): Completable = maybePrevious()
-          .flatMapCompletable {
-            rxMediaPlayer.stop()
-                .andThen(rxMediaPlayer.play(it))
-          }
-          .subscribeOn(scheduler)
+      .flatMapCompletable {
+        rxMediaPlayer.stop()
+            .andThen(rxMediaPlayer.play(it))
+      }
+      .subscribeOn(scheduler)
 
   override fun pause(): Completable = rxMediaPlayer.pause().subscribeOn(scheduler)
 
@@ -117,17 +116,52 @@ internal class RxMediaServiceImpl(
 
   override fun seekTo(position: Long): Completable = rxMediaPlayer.seekTo(position).subscribeOn(scheduler)
 
+  override fun changeRandomState(randomized: Boolean): Completable =
+      Completable.fromAction {
+        this@RxMediaServiceImpl.randomized = randomized
+      }
+          .mergeWith(dispatchObservables(randomized))
+          .mergeWith(shuffleQueue(randomized))
+          .subscribeOn(scheduler)
+
   override fun changeRepeatState(repeatMode: RepeatState): Completable =
       Completable.fromAction {
         this@RxMediaServiceImpl.repeatState = repeatMode
-      }.subscribeOn(scheduler)
+      }.andThen(
+          Completable.fromAction {
+            rxMediaPlayer.currentState().blockingGet()?.setRepeatModeState(repeatMode)?.let { stateDispatcher.onNext(it) }
+          }
+      ).subscribeOn(scheduler)
 
   override fun stateChanges(): Observable<MediaServiceState> =
-      rxMediaPlayer.stateChanges()
+      Observable.merge(rxMediaPlayer.stateChanges(), stateDispatcher)
           .map { it.setRandomizedState(randomized) }
           .map { it.setRepeatModeState(repeatState) }
 
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
+
+  override fun queueChanges(): Observable<List<MediaItem>> = queueDispatcher.subscribeOn(scheduler)
+
+  private fun shuffleQueue(randomized: Boolean) = Completable.fromAction {
+    if (randomized) {
+      originalQueue = queue.clone() as LinkedList<MediaItem>
+      queue.shuffle()
+
+      rxMediaPlayer.currentState().blockingGet()?.setRandomizedState(randomized)?.let { currentItem ->
+        val currentIndex = queue.indexOf(currentItem.item)
+        if (currentIndex != 0) {
+          reorder(0, currentIndex).onErrorComplete().blockingGet()
+        }
+      }
+    } else queue = originalQueue.clone() as LinkedList<MediaItem>
+  }
+
+  private fun dispatchObservables(randomized: Boolean) = Completable.fromAction {
+    rxMediaPlayer.currentState().blockingGet()?.setRandomizedState(randomized)?.let {
+      stateDispatcher.onNext(it)
+      queueDispatcher.onNext(queue)
+    }
+  }
 
   private fun handleCompletedState(it: MediaServiceState): CompletableSource? {
     return when (repeatState) {
@@ -163,22 +197,14 @@ internal class RxMediaServiceImpl(
   }
 
   private fun maybeNext() =
-      maybeRandom().switchIfEmpty(
-          maybeMediaItemBasedOnElement { current ->
-            queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it + 1 })
-          }
-      )
+      maybeMediaItemBasedOnElement { current ->
+        queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it + 1 })
+      }
 
   private fun maybePrevious() =
-      maybeRandom().switchIfEmpty(
-          maybeMediaItemBasedOnElement { current ->
-            queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it - 1 })
-          }
-      )
-
-  private fun maybeRandom(): Maybe<MediaItem> =
-      maybeMediaItemBasedOnElement { current -> queue.getRandomElement(ignore = current) }
-          .filter { randomized }
+      maybeMediaItemBasedOnElement { current ->
+        queue.getMappingReferenceIndex(referenceItem = current, mapReferenceIndex = { it - 1 })
+      }
 
 
   private fun maybeMediaItemBasedOnElement(mapElement: (MediaItem) -> MediaItem?): Maybe<MediaItem> {
@@ -195,3 +221,4 @@ internal class RxMediaServiceImpl(
         .onErrorComplete()
   }
 }
+
