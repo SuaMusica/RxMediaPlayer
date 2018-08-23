@@ -87,9 +87,9 @@ internal class RxMediaServiceImpl(
 
   override fun play(mediaItem: MediaItem): Completable = stop()
       .subscribeOn(scheduler)
-      .andThen(Completable.fromAction { queue.add(mediaItem) })
-      .andThen(maybeFirst())
-      .flatMapCompletable { rxMediaPlayer.play(it) }
+      .andThen(Completable.fromAction { if (queue.isEmpty()) queue.addLast(mediaItem) })
+      .andThen(Single.fromCallable { mediaItem })
+      .flatMapCompletable { rxMediaPlayer.play(mediaItem) }
 
   override fun play(mediaItems: List<MediaItem>): Completable = stop()
       .subscribeOn(scheduler)
