@@ -14,6 +14,8 @@ interface RxMediaService {
 
   fun remove(index: Int): Completable
 
+  fun remove(mediaItems: List<MediaItem>): Completable
+
   fun removeAll(): Completable
 
   fun reorder(indexA: Int, indexB: Int): Completable
@@ -47,6 +49,8 @@ interface RxMediaService {
   fun seekTo(position: Long): Completable
 
   fun changeRepeatState(repeatMode: RepeatState) : Completable
+
+  fun goTo(mediaItem: MediaItem): Completable
 
   // event streams
   fun stateChanges(): Observable<MediaServiceState>

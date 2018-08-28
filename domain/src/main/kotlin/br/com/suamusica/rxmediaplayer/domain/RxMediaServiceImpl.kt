@@ -54,6 +54,23 @@ internal class RxMediaServiceImpl(
       Completable.fromCallable { queue.removeAt(index) }
           .subscribeOn(scheduler)
 
+  override fun remove(mediaItems: List<MediaItem>): Completable =
+      if (queue.count() == mediaItems.count())
+        removeAll().andThen { rxMediaPlayer.release() }
+      else Observable.fromIterable(mediaItems)
+          .flatMapCompletable {
+            if (queue.contains(it)) {
+              queue.remove(it)
+              if (rxMediaPlayer.nowPlaying().blockingGet() == it) {
+                return@flatMapCompletable rxMediaPlayer.stop()
+                    .andThen(next())
+              }
+            }
+            return@flatMapCompletable Completable.complete()
+          }
+          .subscribeOn(scheduler)
+
+
   override fun removeAll(): Completable =
       Completable.fromCallable { queue.clear() }
           .subscribeOn(scheduler)
@@ -134,6 +151,18 @@ internal class RxMediaServiceImpl(
           }
       ).subscribeOn(scheduler)
 
+  override fun goTo(mediaItem: MediaItem) =
+      maybeGoTo(mediaItem)
+          .flatMapCompletable {
+            if (rxMediaPlayer.nowPlaying().blockingGet() != it) {
+              rxMediaPlayer.stop()
+                  .andThen(rxMediaPlayer.play(it))
+            } else {
+              rxMediaPlayer.play()
+            }
+          }
+
+
   override fun stateChanges(): Observable<MediaServiceState> =
       Observable.merge(rxMediaPlayer.stateChanges(), stateDispatcher)
           .map { it.setRandomizedState(randomized) }
@@ -186,6 +215,15 @@ internal class RxMediaServiceImpl(
             .andThen(rxMediaPlayer.play(it))
       }
       .subscribeOn(scheduler)
+
+  private fun maybeGoTo(mediaItem: MediaItem) = Maybe.create<MediaItem> {
+    val mediaIndex = queue.indexOf(mediaItem)
+    if (mediaIndex < 0) it.onComplete()
+    else {
+      it.onSuccess(queue[mediaIndex])
+      it.onComplete()
+    }
+  }
 
   private fun maybeFirst() = Maybe.create<MediaItem> {
     when (queue.peek()) {
