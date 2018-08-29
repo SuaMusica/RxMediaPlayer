@@ -56,7 +56,7 @@ internal class RxMediaServiceImpl(
 
   override fun remove(mediaItems: List<MediaItem>): Completable =
       if (queue.count() == mediaItems.count())
-        removeAll().andThen { rxMediaPlayer.release() }
+        removeAll().andThen(rxMediaPlayer.stop()).andThen(rxMediaPlayer.release())
       else Observable.fromIterable(mediaItems)
           .flatMapCompletable {
             if (queue.contains(it)) {

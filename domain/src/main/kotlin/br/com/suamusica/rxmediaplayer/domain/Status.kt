@@ -6,8 +6,8 @@ sealed class MediaServiceState(open val isRandomized: Boolean? = null, open val 
 }
 
 sealed class MediaBoundState(
-    open val item: MediaItem,
-    open val progress: MediaProgress,
+    open val item: MediaItem?,
+    open val progress: MediaProgress?,
     override val isRandomized: Boolean? = null,
     override val repeatState: RepeatState? = null
 ) : MediaServiceState(isRandomized, repeatState)
@@ -56,6 +56,15 @@ data class CompletedState(
     override val isRandomized: Boolean? = null,
     override val repeatState: RepeatState? = null
 ) : MediaBoundState(item, MediaProgress.COMPLETED, isRandomized, repeatState) {
+  override fun setRepeatModeState(repeatState: RepeatState): MediaBoundState = copy(repeatState = repeatState)
+  override fun setRandomizedState(isRandomized: Boolean): MediaBoundState = copy(isRandomized = isRandomized)
+}
+
+data class IdleState(
+    val mediaItem: MediaItem? = null,
+    override val isRandomized: Boolean? = null,
+    override val repeatState: RepeatState? = null
+) : MediaBoundState(null, null) {
   override fun setRepeatModeState(repeatState: RepeatState): MediaBoundState = copy(repeatState = repeatState)
   override fun setRandomizedState(isRandomized: Boolean): MediaBoundState = copy(isRandomized = isRandomized)
 }

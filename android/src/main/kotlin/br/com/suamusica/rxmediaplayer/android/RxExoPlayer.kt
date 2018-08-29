@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
+import br.com.suamusica.rxmediaplayer.domain.IdleState
 import br.com.suamusica.rxmediaplayer.domain.LoadingState
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import br.com.suamusica.rxmediaplayer.domain.MediaProgress
@@ -119,9 +120,10 @@ class RxExoPlayer (
     exoPlayer.playWhenReady = true
   }
 
-  override fun release(): Completable {
-    return Completable.fromAction { exoPlayer.release() }.andThen { mediaState = MediaPlayerState.END }
-  }
+  override fun release(): Completable =
+      Completable.fromAction { exoPlayer.release() }
+          .andThen { mediaState = MediaPlayerState.END }
+          .andThen { stateDispatcher.onNext(IdleState()) }
 
   override fun nowPlaying(): Maybe<MediaItem> = Maybe.create { emitter ->
     currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
