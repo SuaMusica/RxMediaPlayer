@@ -6,8 +6,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -16,20 +14,19 @@ import android.os.Build
 import android.os.IBinder
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaSessionCompat
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
+import br.com.suamusica.rxmediaplayer.domain.CompletedState
+import br.com.suamusica.rxmediaplayer.domain.IdleState
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
 import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
+import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.BaseTarget
 import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.target.SizeReadyCallback
 import com.bumptech.glide.request.transition.Transition
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposables
@@ -37,9 +34,6 @@ import io.reactivex.schedulers.Schedulers
 
 
 abstract class RxAndroidMediaService : Service() {
-
-  protected lateinit var rxMediaService: RxMediaService
-
   private val telephonyManager by lazy { getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager }
   private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
@@ -96,8 +90,8 @@ abstract class RxAndroidMediaService : Service() {
 
   private fun notify(state: MediaServiceState) {
     when (state) {
-      is PlayingState, is PausedState -> showNotification(state as MediaBoundState)
-      else -> removeNotification()
+      is CompletedState, is IdleState -> removeNotification()
+      else -> showNotification(state as MediaBoundState)
     }
   }
 
@@ -151,7 +145,8 @@ abstract class RxAndroidMediaService : Service() {
   }
 
   companion object {
-    val NOTIFICATION_ID = 1342134
+    const val NOTIFICATION_ID = 1342134
+    lateinit var rxMediaService: RxMediaService
   }
 
   inner class LocalBinder : Binder() {
