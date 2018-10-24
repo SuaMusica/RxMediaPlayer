@@ -177,7 +177,6 @@ class RxExoPlayer (
 
           Player.STATE_BUFFERING -> {
             mediaState = MediaPlayerState.BUFFERING
-            //currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
           }
           Player.STATE_IDLE -> mediaState = MediaPlayerState.IDLE
         }
