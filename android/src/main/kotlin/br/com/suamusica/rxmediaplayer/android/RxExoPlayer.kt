@@ -3,16 +3,7 @@ package br.com.suamusica.rxmediaplayer.android
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import br.com.suamusica.rxmediaplayer.domain.CompletedState
-import br.com.suamusica.rxmediaplayer.domain.IdleState
-import br.com.suamusica.rxmediaplayer.domain.LoadingState
-import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import br.com.suamusica.rxmediaplayer.domain.MediaProgress
-import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
-import br.com.suamusica.rxmediaplayer.domain.PausedState
-import br.com.suamusica.rxmediaplayer.domain.PlayingState
-import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
-import br.com.suamusica.rxmediaplayer.domain.StoppedState
+import br.com.suamusica.rxmediaplayer.domain.*
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.DefaultRenderersFactory
@@ -137,7 +128,7 @@ class RxExoPlayer (
       .doOnNext {
 
         when (it) {
-          is LoadingState, is PausedState, is StoppedState, is CompletedState -> {
+          is LoadingState, is PausedState, is StoppedState, is CompletedState, is ErrorState -> {
             progressDisposable.dispose()
           }
           else -> {
@@ -167,7 +158,7 @@ class RxExoPlayer (
       override fun onLoadingChanged(isLoading: Boolean) {
         if (isLoading) {
           currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
-        } else {
+        } else if (mediaState != MediaPlayerState.ERROR) {
           currentMediaItem?.let { stateDispatcher.onNext(PlayingState(it, currentMediaProgress())) }
         }
       }
@@ -186,7 +177,7 @@ class RxExoPlayer (
 
           Player.STATE_BUFFERING -> {
             mediaState = MediaPlayerState.BUFFERING
-            currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
+            //currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
           }
           Player.STATE_IDLE -> mediaState = MediaPlayerState.IDLE
         }
@@ -196,10 +187,11 @@ class RxExoPlayer (
 
       override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) { }
 
-      override fun onPlayerError(error: ExoPlaybackException?) {
+      override fun onPlayerError(error: ExoPlaybackException) {
         currentMediaItem?.let {
           mediaState = MediaPlayerState.ERROR
-          stateDispatcher.onNext(CompletedState(it))
+          val errorState = ErrorState(it, progress = currentMediaProgress(), exception = error)
+          stateDispatcher.onNext(errorState)
         }
       }
 
