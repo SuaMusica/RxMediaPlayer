@@ -163,7 +163,7 @@ internal class RxMediaServiceImpl(
           }
 
 
-  override fun stateChanges(): Observable<MediaServiceState> =
+  override fun  stateChanges(): Observable<MediaServiceState> =
       Observable.merge(rxMediaPlayer.stateChanges(), stateDispatcher)
           .map { it.setRandomizedState(randomized) }
           .map { it.setRepeatModeState(repeatState) }
