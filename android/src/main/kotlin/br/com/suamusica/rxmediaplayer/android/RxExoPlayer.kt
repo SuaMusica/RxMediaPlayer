@@ -1,7 +1,10 @@
 package br.com.suamusica.rxmediaplayer.android
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
+import android.support.v4.media.AudioAttributesCompat
 import android.util.Log
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
 import br.com.suamusica.rxmediaplayer.domain.IdleState
@@ -13,23 +16,19 @@ import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
+import br.com.suamusica.rxmediaplayer.media.audiofocus.AudioFocusExoPlayerDecorator
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
 import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.DefaultRenderersFactory
-import com.google.android.exoplayer2.ExoPlaybackException
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.upstream.DataSource.Factory
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
@@ -47,32 +46,40 @@ import java.util.concurrent.TimeUnit
 
 class RxExoPlayer (
     private val context: Context,
-    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url },
+    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.mediaUrl },
     private val cookies: List<HttpCookie> = emptyList()
 ) : RxMediaPlayer {
 
   private val TAG = RxExoPlayer::class.java.simpleName
 
-  private lateinit var exoPlayer: ExoPlayer
+  private val audioAttributes = AudioAttributesCompat.Builder()
+      .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
+      .setUsage(AudioAttributesCompat.USAGE_MEDIA)
+      .build()
+
+  // Wrap a SimpleExoPlayer with a decorator to handle audio focus for us.
+  private val exoPlayer: ExoPlayer by lazy {
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    AudioFocusExoPlayerDecorator(audioAttributes,
+        audioManager,
+        ExoPlayerFactory.newSimpleInstance(
+            DefaultRenderersFactory(context),
+            DefaultTrackSelector(),
+            DefaultLoadControl()))
+  }
+
   private val stateDispatcher = BehaviorSubject.create<MediaServiceState>()
   private var progressDisposable = Disposables.disposed()
   private var currentMediaItem: MediaItem? = null
   private var mediaState: MediaPlayerState = MediaPlayerState.IDLE
 
-  init {
-    initializeExoPlayer(context)
-  }
-
-  override fun play(): Completable = Single.fromCallable { currentMediaItem }
-      .filter { it != null }
-      .flatMapCompletable { play(it!!) }
+  override fun play(): Completable = currentMediaItem?.let { Completable.fromCallable { it } } ?: Completable.complete()
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
     try {
       when (mediaState) {
         MediaPlayerState.END -> {
-          initializeExoPlayer(context)
           prepare(mediaItem)
           start(mediaItem)
         }
@@ -105,8 +112,8 @@ class RxExoPlayer (
     }
   }
 
-  override fun stop(): Completable = Completable.fromAction {
-    exoPlayer.stop()
+  override fun stop(reset: Boolean): Completable = Completable.fromAction {
+    exoPlayer.stop(true)
 
     mediaState = MediaPlayerState.STOPPED
 
@@ -150,67 +157,6 @@ class RxExoPlayer (
 
   override fun isPaused(): Single<Boolean> = Single.fromCallable { mediaState == MediaPlayerState.PAUSED }
 
-  private fun initializeExoPlayer(context: Context) {
-    val renderersFactory = DefaultRenderersFactory(context)
-    val trackSelector = AdaptiveTrackSelection.Factory(DefaultBandwidthMeter())
-
-    exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, DefaultTrackSelector(trackSelector))
-    exoPlayer.addListener(eventListener())
-  }
-
-  private fun eventListener(): Player.EventListener {
-    return object : Player.EventListener {
-      override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) { }
-
-      override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) { }
-
-      override fun onLoadingChanged(isLoading: Boolean) {
-        if (isLoading) {
-          currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
-        } else {
-          currentMediaItem?.let { stateDispatcher.onNext(PlayingState(it, currentMediaProgress())) }
-        }
-      }
-
-      override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-        when (playbackState) {
-          Player.STATE_ENDED -> {
-            mediaState = MediaPlayerState.STOPPED
-            currentMediaItem?.let { stateDispatcher.onNext(CompletedState(it)) }
-          }
-
-          Player.STATE_READY -> {
-            mediaState = MediaPlayerState.READY
-            currentMediaItem?.let { stateDispatcher.onNext(PlayingState(it, currentMediaProgress())) }
-          }
-
-          Player.STATE_BUFFERING -> {
-            mediaState = MediaPlayerState.BUFFERING
-            currentMediaItem?.let { stateDispatcher.onNext(LoadingState(it)) }
-          }
-          Player.STATE_IDLE -> mediaState = MediaPlayerState.IDLE
-        }
-      }
-
-      override fun onRepeatModeChanged(repeatMode: Int) { }
-
-      override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) { }
-
-      override fun onPlayerError(error: ExoPlaybackException?) {
-        currentMediaItem?.let {
-          mediaState = MediaPlayerState.ERROR
-          stateDispatcher.onNext(CompletedState(it))
-        }
-      }
-
-      override fun onPositionDiscontinuity(reason: Int) { }
-
-      override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) { }
-
-      override fun onSeekProcessed() { }
-    }
-  }
-
   private fun prepare(mediaItem: MediaItem) {
     exoPlayer.playWhenReady = false
     currentMediaItem = mediaItem
@@ -247,7 +193,10 @@ class RxExoPlayer (
         .subscribe()
   }
 
-  private fun buildMediaSource(uri: Uri, dataSourceFactory: DataSource.Factory): MediaSource {
+  @SuppressLint("SwitchIntDef")
+  private fun buildMediaSource(
+      uri: Uri,
+      dataSourceFactory: Factory): MediaSource {
     @C.ContentType val type = Util.inferContentType(uri)
     when (type) {
       C.TYPE_HLS -> return HlsMediaSource.Factory(dataSourceFactory)

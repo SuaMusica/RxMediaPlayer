@@ -9,7 +9,7 @@ interface RxMediaPlayer {
   fun play(): Completable
   fun play(mediaItem: MediaItem): Completable
   fun pause(): Completable
-  fun stop(): Completable
+  fun stop(reset: Boolean = false): Completable
   fun seekTo(position: Long): Completable
   fun release(): Completable
 

@@ -37,24 +37,28 @@ configurations.all {
 }
 
 dependencies {
-  implementation fileTree(dir: 'libs', include: ['*.jar'])
+  api fileTree(dir: 'libs', include: ['*.jar'])
 
-  implementation project(':domain')
+  api project(':domain')
 
-  implementation "com.android.support:appcompat-v7:$appcompat_version"
-  implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
-  implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+  api "com.android.support:appcompat-v7:$appcompat_version"
+  api "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
+  api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-  implementation "com.google.android.exoplayer:exoplayer-core:$exoplayer_version"
-  implementation "com.google.android.exoplayer:exoplayer-hls:$exoplayer_version"
-  implementation "com.google.android.exoplayer:extension-ima:$exoplayer_version"
+  api "com.google.android.exoplayer:exoplayer-core:$exoplayer_version"
+  api "com.google.android.exoplayer:exoplayer-hls:$exoplayer_version"
+  api "com.google.android.exoplayer:extension-ima:$exoplayer_version"
+  api "com.google.android.exoplayer:extension-mediasession:$exoplayer_version"
+
+  // Glide dependencies
+  api "com.github.bumptech.glide:glide:$glide_version"
+  kapt "com.github.bumptech.glide:compiler:$glide_version"
 
   testImplementation "org.mockito:mockito-core:$mockitoVersion"
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-core:$hamcrestCoreVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestCoreVersion"
   testImplementation "com.nhaarman:mockito-kotlin-kt1.1:$mockitoKotlinVersion"
-  implementation "com.github.bumptech.glide:glide:$glide_version"
 }
 
 ext {

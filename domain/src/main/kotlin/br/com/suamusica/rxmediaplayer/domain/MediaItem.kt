@@ -4,7 +4,7 @@ data class MediaItem constructor(
     val id: String,
     val name: String,
     val author: String,
-    val url: String,
+    val mediaUrl: String,
     val coverUrl: String,
     val timestamp: Long = System.currentTimeMillis(),
     val extras: Map<String, Any?> = emptyMap()

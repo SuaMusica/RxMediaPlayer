@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 
 class RxAndroidMediaPlayer(
     private val context: Context,
-    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url }
+    private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.mediaUrl }
 ) : RxMediaPlayer {
 
   private lateinit var mediaPlayer: MediaPlayer
@@ -88,7 +88,7 @@ class RxAndroidMediaPlayer(
     }
   }
 
-  override fun stop(): Completable = Completable.fromAction {
+  override fun stop(reset: Boolean): Completable = Completable.fromAction {
     mediaPlayer.stop()
 
     state = STOPPED

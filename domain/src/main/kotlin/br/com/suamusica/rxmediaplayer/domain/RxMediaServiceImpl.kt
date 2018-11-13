@@ -130,7 +130,7 @@ internal class RxMediaServiceImpl(
 
   override fun pause(): Completable = rxMediaPlayer.pause().subscribeOn(scheduler)
 
-  override fun stop(): Completable = rxMediaPlayer.stop().subscribeOn(scheduler)
+  override fun stop(reset: Boolean): Completable = rxMediaPlayer.stop(reset).subscribeOn(scheduler)
 
   override fun seekTo(position: Long): Completable = rxMediaPlayer.seekTo(position).subscribeOn(scheduler)
 

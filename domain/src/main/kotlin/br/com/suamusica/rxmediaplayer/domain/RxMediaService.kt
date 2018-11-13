@@ -44,7 +44,7 @@ interface RxMediaService {
 
   fun pause(): Completable
 
-  fun stop(): Completable
+  fun stop(reset: Boolean = false): Completable
 
   fun seekTo(position: Long): Completable
 
