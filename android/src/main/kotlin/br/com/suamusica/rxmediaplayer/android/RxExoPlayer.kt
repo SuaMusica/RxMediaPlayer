@@ -112,7 +112,7 @@ class RxExoPlayer (
   }
 
   override fun release(): Completable =
-      Completable.fromAction { exoPlayer.release() }
+      Completable.fromAction { exoPlayer.stop(true) }
           .andThen { mediaState = MediaPlayerState.END }
           .andThen { stateDispatcher.onNext(IdleState()) }
 
