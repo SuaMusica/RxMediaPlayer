@@ -1,9 +1,20 @@
 package br.com.suamusica.rxmediaplayer.android
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import br.com.suamusica.rxmediaplayer.domain.*
+import br.com.suamusica.rxmediaplayer.domain.CompletedState
+import br.com.suamusica.rxmediaplayer.domain.ErrorState
+import br.com.suamusica.rxmediaplayer.domain.IdleState
+import br.com.suamusica.rxmediaplayer.domain.LoadingState
+import br.com.suamusica.rxmediaplayer.domain.MediaItem
+import br.com.suamusica.rxmediaplayer.domain.MediaProgress
+import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
+import br.com.suamusica.rxmediaplayer.domain.PausedState
+import br.com.suamusica.rxmediaplayer.domain.PlayingState
+import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
+import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.DefaultRenderersFactory
@@ -238,6 +249,7 @@ class RxExoPlayer (
         .subscribe()
   }
 
+  @SuppressLint("SwitchIntDef")
   private fun buildMediaSource(uri: Uri, dataSourceFactory: DataSource.Factory): MediaSource {
     @C.ContentType val type = Util.inferContentType(uri)
     when (type) {

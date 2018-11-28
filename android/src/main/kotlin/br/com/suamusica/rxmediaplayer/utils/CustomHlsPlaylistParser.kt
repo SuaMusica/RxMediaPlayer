@@ -69,6 +69,7 @@ class CustomHlsPlaylistParser: ParsingLoadable.Parser<HlsPlaylist> {
         {
           extraLines.add(line)
         }
+        line = reader.readLine()
       }
     }
 
@@ -97,11 +98,12 @@ class CustomHlsPlaylistParser: ParsingLoadable.Parser<HlsPlaylist> {
       next = reader.readLine()
       while (next != null)
       {
-        next = next!!.trim { it <= ' ' }
-        if (!next!!.isEmpty())
+        next = next?.trim { it <= ' ' }
+        if (next?.isEmpty() == false)
         {
           return true
         }
+        next = reader.readLine()
       }
       return false
     }
@@ -257,19 +259,19 @@ class CustomHlsPlaylistParser: ParsingLoadable.Parser<HlsPlaylist> {
       {
         line = iterator.next()
 
-        if (line!!.startsWith(TAG_PREFIX))
+        if (line?.startsWith(TAG_PREFIX) == true)
         {
           // We expose all tags through the playlist.
           tags.add(line)
         }
 
-        if (line.startsWith(TAG_MEDIA))
+        if (line?.startsWith(TAG_MEDIA) == true)
         {
           // Media tags are parsed at the end to include codec information from #EXT-X-STREAM-INF
           // tags.
           mediaTags.add(line)
         }
-        else if (line.startsWith(TAG_STREAM_INF))
+        else if (line?.startsWith(TAG_STREAM_INF) == true)
         {
           noClosedCaptions = noClosedCaptions or line.contains(ATTR_CLOSED_CAPTIONS_NONE)
           var bitrate = parseIntAttr(line, REGEX_BANDWIDTH)
