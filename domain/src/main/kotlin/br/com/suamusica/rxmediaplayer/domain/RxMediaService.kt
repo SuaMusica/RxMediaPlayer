@@ -8,9 +8,9 @@ import io.reactivex.schedulers.Schedulers
 
 interface RxMediaService {
   // manage queue
-  fun add(mediaItem: MediaItem): Completable
+  fun add(mediaItem: MediaItem, playWhenReady: Boolean = true): Completable
 
-  fun add(mediaItems: List<MediaItem>): Completable
+  fun add(mediaItems: List<MediaItem>, playWhenReady: Boolean = true): Completable
 
   fun remove(index: Int): Completable
 

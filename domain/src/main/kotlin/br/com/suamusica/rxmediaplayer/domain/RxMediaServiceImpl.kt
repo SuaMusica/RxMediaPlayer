@@ -32,23 +32,26 @@ internal class RxMediaServiceImpl(
     )
   }
 
-  override fun add(mediaItem: MediaItem): Completable =
+  override fun add(mediaItem: MediaItem, playWhenReady: Boolean): Completable =
       Single.fromCallable { queue.isEmpty() }
           .subscribeOn(scheduler)
           .flatMapCompletable { isEmptyQueue ->
             queue.offer(mediaItem)
 
             if (isEmptyQueue) {
-              play(mediaItem)
+              if (playWhenReady)
+                play(mediaItem)
+              else
+                pause()
             } else {
               Completable.complete()
             }
           }
 
-  override fun add(mediaItems: List<MediaItem>): Completable =
+  override fun add(mediaItems: List<MediaItem>, playWhenReady: Boolean): Completable =
       Observable.fromIterable(mediaItems)
           .subscribeOn(scheduler)
-          .concatMapCompletable { add(it) }
+          .concatMapCompletable { add(it, playWhenReady) }
 
   override fun remove(index: Int): Completable =
       Completable.fromCallable { queue.removeAt(index) }
