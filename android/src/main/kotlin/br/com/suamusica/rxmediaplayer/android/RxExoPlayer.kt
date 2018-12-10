@@ -66,9 +66,7 @@ class RxExoPlayer (
   }
 
   override fun play(): Completable =
-      Completable.fromAction {
-        currentMediaItem?.let { play(it) }
-      }
+      currentMediaItem?.let { play(it) } ?: Completable.complete()
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
