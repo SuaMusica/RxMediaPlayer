@@ -42,7 +42,7 @@ internal class RxMediaServiceImpl(
               if (playWhenReady)
                 play(mediaItem)
               else
-                pause()
+                prepareMedia(mediaItem)
             } else {
               Completable.complete()
             }
@@ -177,6 +177,16 @@ internal class RxMediaServiceImpl(
   override fun release(): Completable = rxMediaPlayer.release().subscribeOn(scheduler)
 
   override fun queueChanges(): Observable<List<MediaItem>> = queueDispatcher.subscribeOn(scheduler)
+
+
+  private fun prepareMedia(mediaItem: MediaItem)  = stop()
+      .subscribeOn(scheduler)
+      .andThen(Completable.fromAction {
+        if (queue.isEmpty()) queue.addLast(mediaItem)
+        if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
+      })
+      .andThen(Single.fromCallable { mediaItem })
+      .flatMapCompletable { rxMediaPlayer.prepareMedia(it) }
 
   private fun shuffleQueue(randomized: Boolean) = Completable.fromAction {
     if (randomized) {

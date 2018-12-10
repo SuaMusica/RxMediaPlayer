@@ -8,6 +8,7 @@ import io.reactivex.Single
 interface RxMediaPlayer {
   fun play(): Completable
   fun play(mediaItem: MediaItem): Completable
+  fun prepareMedia(currentItem: MediaItem): Completable
   fun pause(): Completable
   fun stop(): Completable
   fun seekTo(position: Long): Completable

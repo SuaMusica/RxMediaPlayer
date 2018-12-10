@@ -85,7 +85,7 @@ class RxExoPlayer (
           start(mediaItem)
         }
         MediaPlayerState.ERROR -> {
-          throw IllegalStateException("Can't play ${mediaItem.name} from mediaState $mediaState")
+          throw IllegalStateException("Can't playCurrentItem ${mediaItem.name} from mediaState $mediaState")
         }
         else -> { Log.d(TAG, "playing ${mediaItem.name} from mediaState $mediaState") }
       }
@@ -104,6 +104,14 @@ class RxExoPlayer (
     currentMediaItem?.let {
       stateDispatcher.onNext(PausedState(it, currentMediaProgress()))
     }
+  }
+
+  override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
+    exoPlayer.playWhenReady = false
+
+    mediaState = MediaPlayerState.PAUSED
+
+    prepare(currentItem)
   }
 
   override fun stop(): Completable = Completable.fromAction {

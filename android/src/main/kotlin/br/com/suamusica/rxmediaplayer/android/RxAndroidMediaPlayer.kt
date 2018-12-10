@@ -69,13 +69,21 @@ class RxAndroidMediaPlayer(
         PAUSED, READY -> {
           start(mediaItem)
         }
-        else -> throw IllegalStateException("Can't play $mediaItem from state $state")
+        else -> throw IllegalStateException("Can't playCurrentItem $mediaItem from state $state")
       }
 
       completableEmitter.onComplete()
     } catch (e: Exception) {
       completableEmitter.onError(e)
     }
+  }
+
+  override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
+    mediaPlayer.pause()
+
+    state = PAUSED
+
+    prepare(currentItem)
   }
 
   override fun pause(): Completable = Completable.fromAction {
