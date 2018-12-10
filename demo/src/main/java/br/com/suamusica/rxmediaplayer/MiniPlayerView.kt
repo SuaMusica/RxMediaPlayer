@@ -9,7 +9,6 @@ import android.widget.*
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
-import com.squareup.picasso.Picasso
 import io.reactivex.Observable
 
 class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : ConstraintLayout(context, attrs, defStyleAttr) {
@@ -93,15 +92,15 @@ class MiniPlayerView(context: Context?, attrs: AttributeSet?, defStyleAttr: Int)
 
   fun bind(state: MediaBoundState?) {
     state?.let {
-      nameSongText.text = it.item.name
-      artistSongNameText.text = it.item.author
+      nameSongText.text = it.item?.name ?: ""
+      artistSongNameText.text = it.item?.author ?: ""
 
-      Picasso.with(context)
-          .load(it.item.coverUrl)
-          .fit()
-          .into(albumCoverImage)
+//      Picasso.with(context)
+//          .load(it.item.coverUrl)
+//          .fit()
+//          .into(albumCoverImage)
 
-      musicProgress.progress = it.progress.current.toInt()
+      musicProgress.progress = it.progress?.current?.toInt() ?: 0
     } ?: run {
       nameSongText.text = ""
       artistSongNameText.text = ""
