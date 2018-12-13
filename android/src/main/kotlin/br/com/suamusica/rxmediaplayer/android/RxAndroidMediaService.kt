@@ -99,8 +99,14 @@ abstract class RxAndroidMediaService : Service() {
 
   private fun notify(state: MediaServiceState) {
     when (state) {
-      is CompletedState, is IdleState, is StoppedState -> removeNotification()
-      else -> showNotification(state as MediaBoundState)
+      is CompletedState, is IdleState, is StoppedState -> {
+        Log.d("RxMediaService", "removeNotification(state: ${state::class.java.simpleName})")
+        removeNotification()
+      }
+      else -> {
+        Log.d("RxMediaService", "showNotification(state: ${state::class.java.simpleName})")
+        showNotification(state as MediaBoundState)
+      }
     }
   }
 

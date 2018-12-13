@@ -36,7 +36,8 @@ internal class RxMediaServiceImpl(
       Single.fromCallable { queue.isEmpty() }
           .subscribeOn(scheduler)
           .flatMapCompletable { isEmptyQueue ->
-            queue.offer(mediaItem)
+            val offered = queue.offer(mediaItem)
+            System.out.println("RxMediaService: Offered(b: $offered, mediaItem: ${mediaItem.name})")
 
             if (isEmptyQueue) {
               if (playWhenReady)
@@ -51,7 +52,7 @@ internal class RxMediaServiceImpl(
   override fun add(mediaItems: List<MediaItem>, playWhenReady: Boolean): Completable =
       Observable.fromIterable(mediaItems)
           .subscribeOn(scheduler)
-          .concatMapCompletable { add(it, playWhenReady) }
+          .flatMapCompletable { add(it, playWhenReady) }
 
   override fun remove(index: Int): Completable =
       Completable.fromCallable { queue.removeAt(index) }
@@ -186,7 +187,10 @@ internal class RxMediaServiceImpl(
         if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
       })
       .andThen(Single.fromCallable { mediaItem })
-      .flatMapCompletable { rxMediaPlayer.prepareMedia(it) }
+      .flatMapCompletable {
+        System.out.println("RxMediaService: PrepareMedia(mediaItem: ${mediaItem.name})")
+        rxMediaPlayer.prepareMedia(it)
+      }
 
   private fun shuffleQueue(randomized: Boolean) = Completable.fromAction {
     if (randomized) {

@@ -266,7 +266,7 @@ class RxExoPlayer (
           .createMediaSource(uri)
       C.TYPE_OTHER -> {
         val factory: DataSource.Factory =
-            if (uri.scheme != null && uri.scheme.startsWith("http")) {
+            if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
               dataSourceFactory
             } else {
               FileDataSourceFactory()
