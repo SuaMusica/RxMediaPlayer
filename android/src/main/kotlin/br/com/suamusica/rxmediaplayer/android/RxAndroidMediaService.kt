@@ -73,6 +73,7 @@ abstract class RxAndroidMediaService : Service() {
   override fun onBind(p0: Intent?): IBinder = binder
 
   override fun onTaskRemoved(rootIntent: Intent?) {
+    Log.d("RxMediaService", "onTaskRemoved()")
     super.onTaskRemoved(rootIntent)
     rxMediaService.stop().subscribe()
     removeNotification()

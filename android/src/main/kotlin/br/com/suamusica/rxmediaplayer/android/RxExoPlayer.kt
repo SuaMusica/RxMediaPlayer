@@ -115,7 +115,7 @@ class RxExoPlayer (
   }
 
   override fun stop(): Completable = Completable.fromAction {
-    exoPlayer.stop()
+    if (exoPlayer.playWhenReady) exoPlayer.stop()
 
     mediaState = MediaPlayerState.STOPPED
 

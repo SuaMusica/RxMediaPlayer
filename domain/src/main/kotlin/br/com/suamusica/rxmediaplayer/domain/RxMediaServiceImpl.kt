@@ -60,14 +60,13 @@ internal class RxMediaServiceImpl(
 
   override fun remove(mediaItems: List<MediaItem>): Completable =
       if (queue.count() == mediaItems.count())
-        removeAll().andThen(rxMediaPlayer.stop()).andThen(rxMediaPlayer.release())
+        removeAll().andThen(rxMediaPlayer.release())
       else Observable.fromIterable(mediaItems)
           .flatMapCompletable {
             if (queue.contains(it)) {
               queue.remove(it)
               if (rxMediaPlayer.nowPlaying().blockingGet() == it) {
-                return@flatMapCompletable rxMediaPlayer.stop()
-                    .andThen(next())
+                return@flatMapCompletable next()
               }
             }
             return@flatMapCompletable Completable.complete()
@@ -106,33 +105,29 @@ internal class RxMediaServiceImpl(
 
   override fun play(): Completable = rxMediaPlayer.play().subscribeOn(scheduler)
 
-  override fun play(mediaItem: MediaItem): Completable = stop()
-      .subscribeOn(scheduler)
-      .andThen(Completable.fromAction {
+  override fun play(mediaItem: MediaItem): Completable =
+      Completable.fromAction {
         if (queue.isEmpty()) queue.addLast(mediaItem)
         if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
-      })
+      }
+      .subscribeOn(scheduler)
       .andThen(Single.fromCallable { mediaItem })
       .flatMapCompletable { rxMediaPlayer.play(mediaItem) }
 
-  override fun play(mediaItems: List<MediaItem>): Completable = stop()
+  override fun play(mediaItems: List<MediaItem>): Completable =
+      Completable.fromAction {
+        queue.addAll(0, mediaItems.map { it })
+      }
       .subscribeOn(scheduler)
-      .andThen(Completable.fromAction { queue.addAll(0, mediaItems.map { it }) })
       .andThen(maybeFirst())
       .flatMapCompletable { rxMediaPlayer.play(it) }
 
   override fun next(): Completable = maybeNext()
-      .flatMapCompletable {
-        rxMediaPlayer.stop()
-            .andThen(rxMediaPlayer.play(it))
-      }
+      .flatMapCompletable { rxMediaPlayer.play(it) }
       .subscribeOn(scheduler)
 
   override fun previous(): Completable = maybePrevious()
-      .flatMapCompletable {
-        rxMediaPlayer.stop()
-            .andThen(rxMediaPlayer.play(it))
-      }
+      .flatMapCompletable { rxMediaPlayer.play(it) }
       .subscribeOn(scheduler)
 
   override fun pause(): Completable = rxMediaPlayer.pause().subscribeOn(scheduler)
@@ -142,9 +137,7 @@ internal class RxMediaServiceImpl(
   override fun seekTo(position: Long): Completable = rxMediaPlayer.seekTo(position).subscribeOn(scheduler)
 
   override fun changeRandomState(randomized: Boolean): Completable =
-      Completable.fromAction {
-        this@RxMediaServiceImpl.randomized = randomized
-      }
+      Completable.fromAction { this@RxMediaServiceImpl.randomized = randomized }
           .mergeWith(dispatchObservables(randomized))
           .mergeWith(shuffleQueue(randomized))
           .subscribeOn(scheduler)
@@ -162,8 +155,7 @@ internal class RxMediaServiceImpl(
       maybeGoTo(mediaItem)
           .flatMapCompletable {
             if (rxMediaPlayer.nowPlaying().blockingGet() != it) {
-              rxMediaPlayer.stop()
-                  .andThen(rxMediaPlayer.play(it))
+              rxMediaPlayer.play(it)
             } else {
               rxMediaPlayer.play()
             }
@@ -180,12 +172,12 @@ internal class RxMediaServiceImpl(
   override fun queueChanges(): Observable<List<MediaItem>> = queueDispatcher.subscribeOn(scheduler)
 
 
-  private fun prepareMedia(mediaItem: MediaItem)  = stop()
-      .subscribeOn(scheduler)
-      .andThen(Completable.fromAction {
+  private fun prepareMedia(mediaItem: MediaItem)  =
+      Completable.fromAction {
         if (queue.isEmpty()) queue.addLast(mediaItem)
         if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
-      })
+      }
+      .subscribeOn(scheduler)
       .andThen(Single.fromCallable { mediaItem })
       .flatMapCompletable {
         System.out.println("RxMediaService: PrepareMedia(mediaItem: ${mediaItem.name})")
@@ -230,10 +222,7 @@ internal class RxMediaServiceImpl(
   }
 
   private fun playFirst() = maybeFirst()
-      .flatMapCompletable {
-        rxMediaPlayer.stop()
-            .andThen(rxMediaPlayer.play(it))
-      }
+      .flatMapCompletable { rxMediaPlayer.play(it) }
       .subscribeOn(scheduler)
 
   private fun maybeGoTo(mediaItem: MediaItem) = Maybe.create<MediaItem> {
