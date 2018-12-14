@@ -82,6 +82,9 @@ class RxExoPlayer (
           start(mediaItem)
         }
         MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.READY -> {
+          if (currentMediaItem?.id != mediaItem.id)
+            prepare(mediaItem)
+
           start(mediaItem)
         }
         MediaPlayerState.ERROR -> {
