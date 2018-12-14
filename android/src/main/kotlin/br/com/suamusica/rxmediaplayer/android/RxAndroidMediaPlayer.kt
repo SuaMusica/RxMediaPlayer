@@ -108,6 +108,8 @@ class RxAndroidMediaPlayer(
 
   override fun seekTo(position: Long): Completable = Completable.fromAction { mediaPlayer.seekTo(position.toInt()) }
 
+  override fun setVolume(volume: Float): Completable = Completable.fromAction { mediaPlayer.setVolume(volume, volume) }
+
   override fun release(): Completable {
     return Completable.fromAction { mediaPlayer.release() }.andThen { state = END }
   }

@@ -8,13 +8,18 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+import android.media.AudioManager.AUDIOFOCUS_GAIN
+import android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.support.annotation.RequiresApi
+import android.support.v4.media.AudioAttributesCompat
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.util.Log
+import br.com.suamusica.rxmediaplayer.audio.AudioFocusRequestCompat
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
 import br.com.suamusica.rxmediaplayer.domain.IdleState
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
@@ -100,7 +105,7 @@ abstract class RxAndroidMediaService : Service() {
 
   private fun notify(state: MediaServiceState) {
     when (state) {
-      is CompletedState, is IdleState, is StoppedState -> {
+      is CompletedState, is IdleState -> {
         Log.d("RxMediaService", "removeNotification(state: ${state::class.java.simpleName})")
         removeNotification()
       }
@@ -137,23 +142,27 @@ abstract class RxAndroidMediaService : Service() {
   }
 
   private fun requestAudioFocusPreAndroidO(): Int {
-    return audioManager.requestAudioFocus(onAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+    return audioManager.requestAudioFocus(
+        onAudioFocusChangeListener,
+        AudioManager.STREAM_MUSIC,
+        AUDIOFOCUS_GAIN.and(AUDIOFOCUS_GAIN_TRANSIENT).or(AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+        )
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
   private fun requestAudioFocusForAndroidO(): Int {
-    val attrs = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_MEDIA)
-        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-        .build()
-
-    val audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setAudioAttributes(attrs)
-        .setAcceptsDelayedFocusGain(true)
+    val audioFocusRequest = AudioFocusRequestCompat.Builder(AudioManager.AUDIOFOCUS_GAIN)
+        .setFocusGain(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        .setAudioAttributes(
+            AudioAttributesCompat.Builder()
+                .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
+                .setLegacyStreamType(AudioAttributesCompat.USAGE_MEDIA)
+                .build())
+        .setWillPauseWhenDucked(true)
         .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
         .build()
 
-    return audioManager.requestAudioFocus(audioFocusRequest)
+    return audioManager.requestAudioFocus(audioFocusRequest.audioFocusRequest)
   }
 
   companion object {

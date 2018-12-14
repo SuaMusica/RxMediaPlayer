@@ -18,7 +18,7 @@ data class LoadingState(
     override val item: MediaItem,
     override val isRandomized: Boolean? = null,
     override val repeatState: RepeatState? = null
-) : MediaBoundState(item, MediaProgress.NONE, isRandomized, repeatState) {
+) : MediaBoundState(item, null, isRandomized, repeatState) {
   override fun setRepeatModeState(repeatState: RepeatState): MediaBoundState = copy(repeatState = repeatState)
   override fun setRandomizedState(isRandomized: Boolean): MediaBoundState = copy(isRandomized = isRandomized)
 }

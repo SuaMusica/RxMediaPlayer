@@ -3,6 +3,7 @@ package br.com.suamusica.rxmediaplayer.android
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
+import android.support.v4.media.AudioAttributesCompat
 import android.util.Log
 import br.com.suamusica.rxmediaplayer.domain.CompletedState
 import br.com.suamusica.rxmediaplayer.domain.ErrorState
@@ -23,7 +24,9 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.Timeline
+import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
@@ -55,7 +58,7 @@ class RxExoPlayer (
 
   private val TAG = RxExoPlayer::class.java.simpleName
 
-  private lateinit var exoPlayer: ExoPlayer
+  private lateinit var exoPlayer: SimpleExoPlayer
   private val stateDispatcher = BehaviorSubject.create<MediaServiceState>()
   private var progressDisposable = Disposables.disposed()
   private var currentMediaItem: MediaItem? = null
@@ -101,6 +104,7 @@ class RxExoPlayer (
 
   override fun pause(): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
+    Log.d("ExoPlayer", "playWhenReady = false")
 
     mediaState = MediaPlayerState.PAUSED
 
@@ -111,8 +115,9 @@ class RxExoPlayer (
 
   override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
+    Log.d("ExoPlayer", "playWhenReady = false")
 
-    mediaState = MediaPlayerState.PAUSED
+    mediaState = MediaPlayerState.STOPPED
 
     prepare(currentItem)
   }
@@ -127,10 +132,15 @@ class RxExoPlayer (
     }
   }
 
-  override fun seekTo(position: Long): Completable = Completable.fromAction {
-    exoPlayer.seekTo(position)
-    exoPlayer.playWhenReady = true
-  }
+  override fun seekTo(position: Long): Completable =
+      Completable.fromAction {
+        exoPlayer.seekTo(position)
+        exoPlayer.playWhenReady = true
+        Log.d("ExoPlayer", "playWhenReady = true")
+      }
+
+  override fun setVolume(volume: Float): Completable =
+      Completable.fromAction { exoPlayer.volume = volume }
 
   override fun release(): Completable =
       Completable.fromAction { exoPlayer.stop(true) }
@@ -147,7 +157,6 @@ class RxExoPlayer (
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {
-
         when (it) {
           is LoadingState, is PausedState, is StoppedState, is CompletedState, is ErrorState -> {
             progressDisposable.dispose()
@@ -168,6 +177,9 @@ class RxExoPlayer (
 
     exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, DefaultTrackSelector(trackSelector))
     exoPlayer.addListener(eventListener())
+    exoPlayer.audioAttributes = AudioAttributes.Builder()
+        .setUsage(C.USAGE_MEDIA)
+        .setContentType(C.CONTENT_TYPE_MUSIC).build()
   }
 
   private fun eventListener(): Player.EventListener {
@@ -225,6 +237,7 @@ class RxExoPlayer (
 
   private fun prepare(mediaItem: MediaItem) {
     exoPlayer.playWhenReady = false
+    Log.d("ExoPlayer", "playWhenReady = false")
     currentMediaItem = mediaItem
 
     val mediaSource = buildMediaSource(retrieveUri(resolveDataSourceForMediaItem(mediaItem)), buildHttpDataSource(cookies))
@@ -233,6 +246,8 @@ class RxExoPlayer (
 
   private fun start(mediaItem: MediaItem) {
     exoPlayer.playWhenReady = true
+    Log.d("ExoPlayer", "playWhenReady = true")
+
     observePlayingState(mediaItem)
     mediaState = MediaPlayerState.STARTED
     stateDispatcher.onNext(PlayingState(mediaItem, currentMediaProgress()))

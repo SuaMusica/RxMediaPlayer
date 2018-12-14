@@ -52,6 +52,8 @@ interface RxMediaService {
 
   fun goTo(mediaItem: MediaItem): Completable
 
+  fun setVolume(volume: Float): Completable
+
   // event streams
   fun stateChanges(): Observable<MediaServiceState>
 
