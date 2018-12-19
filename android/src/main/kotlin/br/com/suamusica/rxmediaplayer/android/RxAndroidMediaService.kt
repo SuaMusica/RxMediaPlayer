@@ -158,7 +158,6 @@ abstract class RxAndroidMediaService : Service() {
                 .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
                 .setLegacyStreamType(AudioAttributesCompat.USAGE_MEDIA)
                 .build())
-        .setWillPauseWhenDucked(true)
         .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
         .build()
 
