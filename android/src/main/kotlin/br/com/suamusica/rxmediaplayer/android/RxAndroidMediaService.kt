@@ -30,6 +30,7 @@ import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 
@@ -42,7 +43,8 @@ abstract class RxAndroidMediaService : Service() {
 
   private lateinit var phoneStateListener: PhoneStateListener
   private lateinit var onAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
-  private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
+
+  val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
   override fun onCreate() {
     super.onCreate()
@@ -54,19 +56,31 @@ abstract class RxAndroidMediaService : Service() {
 
     disposable.add(
         rxMediaService.stateChanges()
-        .observeOn(AndroidSchedulers.mainThread())
-        .doOnNext { notify(it) }
-        .doAfterTerminate { removeNotification() }
-        .doAfterTerminate { rxMediaService.release() }
-        .subscribe()
+            .filter { it is MediaBoundState }
+            .distinctUntilChanged { m1, m2 ->
+              val id1 = (m1 as MediaBoundState).item?.id
+              val id2 = (m2 as MediaBoundState).item?.id
+
+              val different = id1 == id2 && m1::class == m2::class
+              Log.d("RxAndroidMediaSe", "m1: ($id1)/${m1::class} != m2: ($id2)/${m2::class} |  $different")
+              return@distinctUntilChanged different
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnNext {
+              Log.d("RxAndroidMediaSe", "notify")
+              notify(it)
+            }
+            .doAfterTerminate { removeNotification() }
+            .doAfterTerminate { rxMediaService.release() }
+            .subscribe()
     )
 
     disposable.add(
         observeNotification()
-            .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnNext { bindNotification(it) }
-            .doOnDispose { removeNotification() }
+            .doOnNext { showNotificationOnScreen(it) }
+            .doAfterTerminate { removeNotification() }
+            .doAfterTerminate { rxMediaService.release() }
             .subscribe()
     )
   }
@@ -103,39 +117,9 @@ abstract class RxAndroidMediaService : Service() {
     telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
   }
 
-  private fun notify(state: MediaServiceState) {
-    when (state) {
-      is CompletedState, is IdleState -> {
-        Log.d("RxMediaService", "removeNotification(state: ${state::class.java.simpleName})")
-        removeNotification()
-      }
-      else -> {
-        Log.d("RxMediaService", "showNotification(state: ${state::class.java.simpleName})")
-        showNotification(state as MediaBoundState)
-      }
-    }
-  }
+  abstract fun notify(state: MediaServiceState)
 
-  private fun showNotification(state: MediaBoundState) {
-    Log.d("RxMediaService", "showNotification()")
-    val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      requestAudioFocusForAndroidO()
-    } else {
-      requestAudioFocusPreAndroidO()
-    }
-
-    if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-      // Start playback
-      createNotification(state)
-    }
-  }
-
-  private fun bindNotification(notification: Notification) {
-    notificationManager.notify(NOTIFICATION_ID, notification)
-    showNotificationOnScreen(notification)
-  }
-
-  fun showNotificationOnScreen(notification: Notification) {
+  private fun showNotificationOnScreen(notification: Notification) {
     notificationManager.notify(NOTIFICATION_ID, notification)
     startForeground(NOTIFICATION_ID, notification)
     telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
