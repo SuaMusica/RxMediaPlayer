@@ -37,7 +37,8 @@ internal class RxMediaServiceImpl(
           .subscribeOn(scheduler)
           .flatMapCompletable { isEmptyQueue ->
             val offered = queue.offer(mediaItem)
-            System.out.println("RxMediaService: Offered(b: $offered, mediaItem: ${mediaItem.name})")
+            System.out.println("RxMediaService: Offered(b: $offered, mediaItem: ${mediaItem.name}, " +
+                "playWhenReady: $playWhenReady, isEmptyQueue: $isEmptyQueue)")
 
             if (isEmptyQueue) {
               if (playWhenReady)

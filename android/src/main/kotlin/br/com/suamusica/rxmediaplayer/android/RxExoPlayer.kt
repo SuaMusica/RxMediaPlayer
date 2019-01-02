@@ -104,7 +104,7 @@ class RxExoPlayer (
 
   override fun pause(): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer", "playWhenReady = false")
+    Log.d("ExoPlayer", "pause(playWhenReady: false)")
 
     mediaState = MediaPlayerState.PAUSED
 
@@ -115,7 +115,7 @@ class RxExoPlayer (
 
   override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer", "playWhenReady = false")
+    Log.d("ExoPlayer", "prepareMedia(playWhenReady: false)")
 
     mediaState = MediaPlayerState.STOPPED
 
@@ -237,7 +237,7 @@ class RxExoPlayer (
 
   private fun prepare(mediaItem: MediaItem) {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer", "playWhenReady = false")
+    Log.d("ExoPlayer", "prepare(playWhenReady: false)")
     currentMediaItem = mediaItem
 
     val mediaSource = buildMediaSource(retrieveUri(resolveDataSourceForMediaItem(mediaItem)), buildHttpDataSource(cookies))

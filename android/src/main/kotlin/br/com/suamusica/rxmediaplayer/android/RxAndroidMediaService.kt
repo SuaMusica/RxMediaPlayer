@@ -5,8 +5,6 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
 import android.media.AudioManager.AUDIOFOCUS_GAIN
@@ -20,17 +18,13 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.util.Log
 import br.com.suamusica.rxmediaplayer.audio.AudioFocusRequestCompat
-import br.com.suamusica.rxmediaplayer.domain.CompletedState
-import br.com.suamusica.rxmediaplayer.domain.IdleState
 import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
-import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 
@@ -40,6 +34,7 @@ abstract class RxAndroidMediaService : Service() {
 
   private val binder = LocalBinder()
   private var disposable = CompositeDisposable()
+  private var notificationDisposable = CompositeDisposable()
 
   private lateinit var phoneStateListener: PhoneStateListener
   private lateinit var onAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
@@ -61,28 +56,17 @@ abstract class RxAndroidMediaService : Service() {
               val id1 = (m1 as MediaBoundState).item?.id
               val id2 = (m2 as MediaBoundState).item?.id
 
-              val different = id1 == id2 && m1::class == m2::class
-              Log.d("RxAndroidMediaSe", "m1: ($id1)/${m1::class} != m2: ($id2)/${m2::class} |  $different")
-              return@distinctUntilChanged different
+              return@distinctUntilChanged id1 == id2 && m1::class == m2::class
             }
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnNext {
-              Log.d("RxAndroidMediaSe", "notify")
-              notify(it)
-            }
+            .doOnNext { notify(it) }
             .doAfterTerminate { removeNotification() }
             .doAfterTerminate { rxMediaService.release() }
             .subscribe()
     )
 
-    disposable.add(
-        observeNotification()
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnNext { showNotificationOnScreen(it) }
-            .doAfterTerminate { removeNotification() }
-            .doAfterTerminate { rxMediaService.release() }
-            .subscribe()
-    )
+    subscribeNotificationOnScreen()
+    unsubscribeNotificationOnScreen()
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -101,7 +85,8 @@ abstract class RxAndroidMediaService : Service() {
 
   override fun onDestroy() {
     super.onDestroy()
-    disposable.dispose()
+    disposable.clear()
+    notificationDisposable.clear()
   }
 
   abstract fun createRxMediaPlayer(): RxMediaPlayer
@@ -120,6 +105,7 @@ abstract class RxAndroidMediaService : Service() {
   abstract fun notify(state: MediaServiceState)
 
   private fun showNotificationOnScreen(notification: Notification) {
+    Log.d("RxMediaService", "showNotificationOnScreen(notification)")
     notificationManager.notify(NOTIFICATION_ID, notification)
     startForeground(NOTIFICATION_ID, notification)
     telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
@@ -146,6 +132,22 @@ abstract class RxAndroidMediaService : Service() {
         .build()
 
     return audioManager.requestAudioFocus(audioFocusRequest.audioFocusRequest)
+  }
+
+  fun unsubscribeNotificationOnScreen() {
+    notificationDisposable.clear()
+  }
+
+  fun subscribeNotificationOnScreen() {
+    if (notificationDisposable.size() < 1 || notificationDisposable.isDisposed) {
+      notificationDisposable.add(
+          observeNotification()
+              .observeOn(AndroidSchedulers.mainThread())
+              .doOnNext { showNotificationOnScreen(it) }
+              .doOnDispose { removeNotification() }
+              .subscribe()
+      )
+    }
   }
 
   companion object {
