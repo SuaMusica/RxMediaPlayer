@@ -49,9 +49,7 @@ class RxAndroidMediaPlayer(
 
   override fun play(): Completable =
       Single.fromCallable { currentMediaItem }
-          .filter { it != null }
-          .onErrorComplete()
-          .flatMapCompletable { play(it!!) }
+          .flatMapCompletable { play(it) }
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = create { completableEmitter ->

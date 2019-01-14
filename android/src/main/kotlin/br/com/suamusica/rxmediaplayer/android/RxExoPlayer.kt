@@ -16,7 +16,9 @@ import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
+import br.com.suamusica.rxmediaplayer.exception.PlayerNotConnectedToInternetException
 import br.com.suamusica.rxmediaplayer.utils.CustomHlsPlaylistParser
+import br.com.suamusica.rxmediaplayer.utils.isConnected
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.ExoPlaybackException
@@ -73,6 +75,10 @@ class RxExoPlayer (
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
+    if (isConnectedToInternet(mediaItem)) {
+      throw PlayerNotConnectedToInternetException()
+    }
+
     try {
       when (mediaState) {
         MediaPlayerState.END -> {
@@ -91,7 +97,10 @@ class RxExoPlayer (
           start(mediaItem)
         }
         MediaPlayerState.ERROR -> {
-          throw IllegalStateException("Can't playCurrentItem ${mediaItem.name} from mediaState $mediaState")
+          if (isConnectedToInternet(mediaItem))
+            throw PlayerNotConnectedToInternetException()
+          else
+            throw IllegalStateException("Can't playCurrentItem ${mediaItem.name} from mediaState $mediaState")
         }
         else -> { Log.d(TAG, "playing ${mediaItem.name} from mediaState $mediaState") }
       }
@@ -234,6 +243,9 @@ class RxExoPlayer (
       override fun onSeekProcessed() { }
     }
   }
+
+  private fun isConnectedToInternet(mediaItem: MediaItem) =
+      context.isConnected().not() && mediaItem.url.startsWith("http")
 
   private fun prepare(mediaItem: MediaItem) {
     exoPlayer.playWhenReady = false
