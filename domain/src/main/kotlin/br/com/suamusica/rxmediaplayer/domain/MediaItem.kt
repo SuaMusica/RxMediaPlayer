@@ -7,5 +7,6 @@ data class MediaItem constructor(
     val url: String,
     val coverUrl: String,
     val timestamp: Long = System.currentTimeMillis(),
+    val itemHash: String = timestamp.toString().md5(),
     val extras: Map<String, Any?> = emptyMap()
 )

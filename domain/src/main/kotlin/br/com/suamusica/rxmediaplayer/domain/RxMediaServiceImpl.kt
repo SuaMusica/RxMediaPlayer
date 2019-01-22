@@ -115,6 +115,8 @@ internal class RxMediaServiceImpl(
 
   override fun play(): Completable = rxMediaPlayer.play().subscribeOn(scheduler)
 
+  override fun nowPlaying(): Maybe<MediaItem> = rxMediaPlayer.nowPlaying()
+
   override fun play(mediaItem: MediaItem): Completable = stop()
       .andThen(
           Completable.fromAction {

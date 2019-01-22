@@ -1,6 +1,7 @@
 package br.com.suamusica.rxmediaplayer.domain
 
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
@@ -32,6 +33,8 @@ interface RxMediaService {
   fun isPaused(): Single<Boolean>
 
   // manage stateChanges state
+  fun nowPlaying(): Maybe<MediaItem>
+
   fun play(): Completable
 
   fun play(mediaItem: MediaItem): Completable
