@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit
 class RxExoPlayer (
     private val context: Context,
     private val resolveDataSourceForMediaItem: (MediaItem) -> String = { it.url },
-    private val cookies: List<HttpCookie> = emptyList()
+    signedCookies: List<HttpCookie>? = emptyList()
 ) : RxMediaPlayer {
 
   private val TAG = RxExoPlayer::class.java.simpleName
@@ -65,55 +65,64 @@ class RxExoPlayer (
   private var progressDisposable = Disposables.disposed()
   private var currentMediaItem: MediaItem? = null
   private var mediaState: MediaPlayerState = MediaPlayerState.IDLE
+  private var cookies: List<HttpCookie> = signedCookies ?: emptyList()
 
   init {
     initializeExoPlayer(context)
   }
 
-  override fun play(): Completable =
-      currentMediaItem?.let { play(it) } ?: Completable.complete()
+  override fun play(): Completable {
+    Log.d("ExoPlayer - RxMedia", "play(currentMediaItem: ${currentMediaItem == null})")
+    return currentMediaItem?.let {
+      Log.d("ExoPlayer - RxMedia", "play(it)")
+      play(it)
+    } ?: Completable.complete()
+  }
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
     if (isConnectedToInternet(mediaItem)) {
-      throw PlayerNotConnectedToInternetException()
-    }
-
-    try {
-      when (mediaState) {
-        MediaPlayerState.END -> {
-          initializeExoPlayer(context)
-          prepare(mediaItem)
-          start(mediaItem)
-        }
-        MediaPlayerState.IDLE, MediaPlayerState.STOPPED -> {
-          prepare(mediaItem)
-          start(mediaItem)
-        }
-        MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.READY -> {
-          if (currentMediaItem?.id != mediaItem.id)
-            prepare(mediaItem)
-
-          start(mediaItem)
-        }
-        MediaPlayerState.ERROR -> {
-          if (isConnectedToInternet(mediaItem))
-            throw PlayerNotConnectedToInternetException()
-          else
-            throw IllegalStateException("Can't playCurrentItem ${mediaItem.name} from mediaState $mediaState")
-        }
-        else -> { Log.d(TAG, "playing ${mediaItem.name} from mediaState $mediaState") }
-      }
-
+      completableEmitter.onError(PlayerNotConnectedToInternetException())
       completableEmitter.onComplete()
-    } catch (e: Exception) {
-      completableEmitter.onError(e)
+    } else {
+      try {
+        when (mediaState) {
+          MediaPlayerState.END -> {
+            initializeExoPlayer(context)
+            prepare(mediaItem)
+            start(mediaItem)
+          }
+          MediaPlayerState.IDLE, MediaPlayerState.STOPPED -> {
+            prepare(mediaItem)
+            start(mediaItem)
+          }
+          MediaPlayerState.PAUSED, MediaPlayerState.STARTED, MediaPlayerState.READY -> {
+            if (currentMediaItem?.id != mediaItem.id)
+              prepare(mediaItem)
+
+            start(mediaItem)
+          }
+          MediaPlayerState.ERROR -> {
+            completableEmitter.onError(
+                if (isConnectedToInternet(mediaItem))
+                  PlayerNotConnectedToInternetException()
+                else
+                  IllegalStateException("Can't playCurrentItem ${mediaItem.name} from mediaState $mediaState")
+            )
+          }
+          else -> { Log.d(TAG, "playing ${mediaItem.name} from mediaState $mediaState") }
+        }
+
+        completableEmitter.onComplete()
+      } catch (e: Exception) {
+        completableEmitter.onError(e)
+      }
     }
   }
 
   override fun pause(): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer", "pause(playWhenReady: false)")
+    Log.d("ExoPlayer - RxMedia", "pause(playWhenReady: false)")
 
     mediaState = MediaPlayerState.PAUSED
 
@@ -124,7 +133,7 @@ class RxExoPlayer (
 
   override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer", "prepareMedia(playWhenReady: false)")
+    Log.d("ExoPlayer - RxMedia", "prepareMedia(playWhenReady: false)")
 
     mediaState = MediaPlayerState.STOPPED
 
@@ -132,6 +141,7 @@ class RxExoPlayer (
   }
 
   override fun stop(): Completable = Completable.fromAction {
+    Log.d("ExoPlayer - RxMedia", "stop")
     if (exoPlayer.playWhenReady) exoPlayer.stop()
 
     mediaState = MediaPlayerState.STOPPED
@@ -145,16 +155,22 @@ class RxExoPlayer (
       Completable.fromAction {
         exoPlayer.seekTo(position)
         exoPlayer.playWhenReady = true
-        Log.d("ExoPlayer", "playWhenReady = true")
+        Log.d("ExoPlayer - RxMedia", "playWhenReady = true")
       }
 
   override fun setVolume(volume: Float): Completable =
       Completable.fromAction { exoPlayer.volume = volume }
 
-  override fun release(): Completable =
-      Completable.fromAction { exoPlayer.stop(true) }
-          .andThen { mediaState = MediaPlayerState.END }
-          .andThen { stateDispatcher.onNext(IdleState()) }
+  override fun release(): Completable {
+    Log.d("ExoPlayer - RxMedia", "release")
+    return Single.fromCallable { exoPlayer.stop(true) }
+        .doOnSuccess { mediaState = MediaPlayerState.END }
+        .doOnSuccess { stateDispatcher.onNext(IdleState()) }
+        .toCompletable()
+        .doOnError { Log.e("ExoPlayer - RxMedia", "release()", it) }
+        .onErrorComplete()
+  }
+
 
   override fun nowPlaying(): Maybe<MediaItem> = Maybe.create { emitter ->
     currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
@@ -179,6 +195,12 @@ class RxExoPlayer (
   override fun isPlaying(): Single<Boolean> = Single.fromCallable { exoPlayer.playWhenReady }
 
   override fun isPaused(): Single<Boolean> = Single.fromCallable { mediaState == MediaPlayerState.PAUSED }
+
+  override fun setCookies(list: List<HttpCookie>): Single<Unit> =
+      Single.fromCallable {
+        mediaState = MediaPlayerState.IDLE
+        cookies = list
+      }
 
   private fun initializeExoPlayer(context: Context) {
     val renderersFactory = DefaultRenderersFactory(context)
@@ -275,10 +297,11 @@ class RxExoPlayer (
 
     progressDisposable = Observable.interval(1, TimeUnit.SECONDS)
         .map {
-          if (mediaState == MediaPlayerState.PAUSED) {
-            PausedState(mediaItem, currentMediaProgress())
-          } else {
-            PlayingState(mediaItem, currentMediaProgress())
+          when (mediaState) {
+            MediaPlayerState.PAUSED -> PausedState(mediaItem, currentMediaProgress())
+            MediaPlayerState.STOPPED -> StoppedState(mediaItem, currentMediaProgress())
+            MediaPlayerState.END, MediaPlayerState.IDLE -> IdleState()
+            else -> PlayingState(mediaItem, currentMediaProgress())
           }
         }
         .doOnNext { stateDispatcher.onNext(it) }
@@ -334,3 +357,4 @@ class RxExoPlayer (
         Uri.fromFile(File(url))
       }
 }
+

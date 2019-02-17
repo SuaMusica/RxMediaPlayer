@@ -4,6 +4,7 @@ import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
+import java.net.HttpCookie
 
 interface RxMediaPlayer {
   fun play(): Completable
@@ -23,4 +24,6 @@ interface RxMediaPlayer {
   fun isPlaying(): Single<Boolean>
 
   fun isPaused(): Single<Boolean>
+
+  fun setCookies(list: List<HttpCookie>): Single<Unit>
 }

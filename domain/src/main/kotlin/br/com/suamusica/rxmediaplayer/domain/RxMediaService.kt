@@ -6,18 +6,19 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
+import java.net.HttpCookie
 
 interface RxMediaService {
   // manage queue
   fun add(mediaItem: MediaItem, playWhenReady: Boolean = true): Completable
 
-  fun add(mediaItems: List<MediaItem>, playWhenReady: Boolean = true): Completable
+  fun add(mediaItems: List<MediaItem>, playWhenReady: Boolean = true, fromBeginning: Boolean = true): Completable
 
   fun remove(index: Int): Completable
 
   fun remove(mediaItems: List<MediaItem>): Completable
 
-  fun removeAll(): Completable
+  fun removeAll(release: Boolean = false): Completable
 
   fun reorder(indexA: Int, indexB: Int): Completable
 
@@ -65,6 +66,8 @@ interface RxMediaService {
 
   // queue update streams
   fun queueChanges(): Observable<List<MediaItem>>
+
+  fun setCookies(cookies: List<HttpCookie>): Single<Unit>
 
   companion object {
     fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =

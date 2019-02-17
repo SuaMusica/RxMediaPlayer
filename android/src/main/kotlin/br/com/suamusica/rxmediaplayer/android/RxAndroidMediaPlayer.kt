@@ -30,6 +30,7 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.Disposables
 import io.reactivex.subjects.BehaviorSubject
+import java.net.HttpCookie
 import java.util.concurrent.TimeUnit
 
 class RxAndroidMediaPlayer(
@@ -130,6 +131,8 @@ class RxAndroidMediaPlayer(
   override fun isPlaying(): Single<Boolean> = Single.fromCallable { mediaPlayer.isPlaying }
 
   override fun isPaused(): Single<Boolean> = Single.fromCallable { state == PAUSED }
+
+  override fun setCookies(list: List<HttpCookie>): Single<Unit> = Single.error(NotImplementedError())
 
   private fun initializeMediaPlayer(context: Context) {
     mediaPlayer = MediaPlayer()

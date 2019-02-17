@@ -40,7 +40,10 @@ object RxMediaServiceSystemListeners {
         // Resume playback
         if (wasPlaying && rxMediaService.isPaused().blockingGet() && lossType != AudioManager.AUDIOFOCUS_LOSS) {
           Log.d("OnAudioFocusChange", "play")
-          rxMediaService.play().onErrorComplete().blockingAwait()
+          rxMediaService.play()
+              .doOnError { Log.e("OnAudioFocusChange", it.message, it) }
+              .onErrorComplete()
+              .blockingAwait()
         }
 
         rxMediaService.apply {
@@ -69,7 +72,10 @@ object RxMediaServiceSystemListeners {
         //Not in call: Play music
         if (wasPlaying && rxMediaService.isPaused().blockingGet()) {
           wasPlaying = false
-          rxMediaService.play().onErrorComplete().blockingAwait()
+          rxMediaService.play()
+              .doOnError { Log.e("onCallStateChanged", it.message, it) }
+              .onErrorComplete()
+              .blockingAwait()
         }
       }
       super.onCallStateChanged(state, incomingNumber)
