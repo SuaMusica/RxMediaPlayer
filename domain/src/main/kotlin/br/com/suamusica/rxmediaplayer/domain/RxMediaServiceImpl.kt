@@ -10,6 +10,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.subjects.PublishSubject
 import java.net.HttpCookie
 import java.util.LinkedList
+import java.util.concurrent.TimeUnit
 
 internal class RxMediaServiceImpl(
     private val rxMediaPlayer: RxMediaPlayer,
@@ -27,8 +28,10 @@ internal class RxMediaServiceImpl(
     disposables.add(
         rxMediaPlayer.stateChanges()
             .subscribeOn(scheduler)
+            .onErrorReturnItem(IdleState())
             .filter { it is CompletedState }
             .flatMapCompletable(this::handleCompletedState)
+            .onErrorComplete()
             .subscribe()
     )
   }
@@ -130,7 +133,8 @@ internal class RxMediaServiceImpl(
 
   override fun play(): Completable = rxMediaPlayer.play().subscribeOn(scheduler)
 
-  override fun nowPlaying(): Maybe<MediaItem> = rxMediaPlayer.nowPlaying().onErrorComplete()
+  override fun nowPlaying(): Maybe<MediaItem> =
+      rxMediaPlayer.nowPlaying().timeout(250, TimeUnit.MILLISECONDS).onErrorComplete().subscribeOn(scheduler)
 
   override fun play(mediaItem: MediaItem): Completable =
       stop()

@@ -71,13 +71,7 @@ class RxExoPlayer (
     initializeExoPlayer(context)
   }
 
-  override fun play(): Completable {
-    Log.d("ExoPlayer - RxMedia", "play(currentMediaItem: ${currentMediaItem == null})")
-    return currentMediaItem?.let {
-      Log.d("ExoPlayer - RxMedia", "play(it)")
-      play(it)
-    } ?: Completable.complete()
-  }
+  override fun play(): Completable = currentMediaItem?.let { play(it) } ?: Completable.complete()
 
   @Synchronized
   override fun play(mediaItem: MediaItem): Completable = Completable.create { completableEmitter ->
@@ -173,7 +167,10 @@ class RxExoPlayer (
 
 
   override fun nowPlaying(): Maybe<MediaItem> = Maybe.create { emitter ->
-    currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
+    currentMediaItem?.let { emitter.onSuccess(it) } ?: run {
+      emitter.onError(NoSuchElementException())
+      emitter.onComplete()
+    }
   }
 
   override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
