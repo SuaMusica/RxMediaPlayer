@@ -7,10 +7,10 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.BiFunction
 import io.reactivex.subjects.PublishSubject
 import java.net.HttpCookie
 import java.util.LinkedList
-import java.util.concurrent.TimeUnit
 
 internal class RxMediaServiceImpl(
     private val rxMediaPlayer: RxMediaPlayer,
@@ -81,13 +81,17 @@ internal class RxMediaServiceImpl(
       if (queue.containsAll(mediaItems) && queue.count() == mediaItems.count())
         removeAll(true)
       else Observable.fromIterable(mediaItems)
-          .flatMapCompletable {
-            if (queue.contains(it)) {
-              queue.remove(it)
-              if (nowPlaying().blockingGet() == it)
-                return@flatMapCompletable stop().andThen(next())
-            }
-            return@flatMapCompletable Completable.complete()
+          .zipWith(nowPlaying().toObservable(),
+              BiFunction { itemToRemove: MediaItem, nowPlaying: Optional<MediaItem> ->
+                if (queue.contains(itemToRemove)) queue.remove(itemToRemove)
+
+                nowPlaying.isPresent() && nowPlaying.get() == itemToRemove
+          })
+          .flatMapCompletable { removedMediaIsPlaying ->
+            if (removedMediaIsPlaying)
+              stop().andThen(next())
+            else
+              Completable.complete()
           }
           .andThen {
             if (queue.isEmpty()) rxMediaPlayer.release()
@@ -125,6 +129,8 @@ internal class RxMediaServiceImpl(
         }
       }.subscribeOn(scheduler)
 
+  override fun countQueue(): Single<Int> = Single.fromCallable { queue.size }
+
   override fun isRandomized(): Single<Boolean> = Single.fromCallable { randomized }.subscribeOn(scheduler)
 
   override fun isPlaying(): Single<Boolean> = rxMediaPlayer.isPlaying().subscribeOn(scheduler)
@@ -133,8 +139,8 @@ internal class RxMediaServiceImpl(
 
   override fun play(): Completable = rxMediaPlayer.play().subscribeOn(scheduler)
 
-  override fun nowPlaying(): Maybe<MediaItem> =
-      rxMediaPlayer.nowPlaying().timeout(250, TimeUnit.MILLISECONDS).onErrorComplete().subscribeOn(scheduler)
+  override fun nowPlaying(): Single<Optional<MediaItem>> =
+      rxMediaPlayer.nowPlaying().subscribeOn(scheduler)
 
   override fun play(mediaItem: MediaItem): Completable =
       stop()
@@ -143,7 +149,6 @@ internal class RxMediaServiceImpl(
                 if (queue.isEmpty()) queue.addLast(mediaItem)
                 if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
               })
-          .subscribeOn(scheduler)
           .subscribeOn(scheduler)
           .andThen(Single.fromCallable { mediaItem })
           .flatMapCompletable { rxMediaPlayer.play(mediaItem) }
@@ -191,12 +196,18 @@ internal class RxMediaServiceImpl(
 
   override fun goTo(mediaItem: MediaItem) =
       maybeGoTo(mediaItem)
-          .flatMapCompletable {
-            if (nowPlaying().blockingGet() != it)
-              stop().andThen(rxMediaPlayer.play(it))
+          .toObservable()
+          .zipWith(nowPlaying().toObservable(),
+              BiFunction { media: MediaItem, nowPlaying: Optional<MediaItem> ->
+                Pair(media, nowPlaying.isPresent() && nowPlaying.get() == media)
+              })
+          .flatMapCompletable { newMedia ->
+            if (newMedia.second)
+              stop().andThen(rxMediaPlayer.play(newMedia.first))
             else
               rxMediaPlayer.play()
           }
+
 
   override fun setVolume(volume: Float): Completable = rxMediaPlayer.setVolume(volume).subscribeOn(scheduler)
 
@@ -219,7 +230,6 @@ internal class RxMediaServiceImpl(
             if (queue.isEmpty()) queue.addLast(mediaItem)
             if (queue.contains(mediaItem).not()) queue.addFirst(mediaItem)
           })
-          .subscribeOn(scheduler)
           .andThen(Single.fromCallable { mediaItem })
           .flatMapCompletable { rxMediaPlayer.prepareMedia(it) }
 
@@ -297,12 +307,13 @@ internal class RxMediaServiceImpl(
 
   private fun maybeMediaItemBasedOnElement(mapElement: (MediaItem) -> MediaItem?): Maybe<MediaItem> {
     return nowPlaying()
+        .filter { it.isPresent() }
         .flatMap { playingItem ->
           if (queue.isEmpty()) {
             return@flatMap Maybe.empty<MediaItem>()
           }
 
-          val mapped = mapElement(playingItem)
+          val mapped = mapElement(playingItem.get())
 
           if (mapped == null) Maybe.empty<MediaItem>() else Maybe.just(mapped)
         }

@@ -19,6 +19,7 @@ import br.com.suamusica.rxmediaplayer.domain.LoadingState
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import br.com.suamusica.rxmediaplayer.domain.MediaProgress
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
+import br.com.suamusica.rxmediaplayer.domain.Optional
 import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
@@ -113,9 +114,7 @@ class RxAndroidMediaPlayer(
     return Completable.fromAction { mediaPlayer.release() }.andThen { state = END }
   }
 
-  override fun nowPlaying(): Maybe<MediaItem> = Maybe.create { emitter ->
-    currentMediaItem?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
-  }
+  override fun nowPlaying(): Single<Optional<MediaItem>> = Single.fromCallable { Optional.ofNullable(currentMediaItem) }
 
   override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
     stateDispatcher.value?.let { emitter.onSuccess(it) } ?: emitter.onComplete()

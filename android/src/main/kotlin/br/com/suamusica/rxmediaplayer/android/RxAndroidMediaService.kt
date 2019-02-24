@@ -47,7 +47,7 @@ abstract class RxAndroidMediaService : Service() {
     super.onCreate()
 
     val rxMediaPlayer = createRxMediaPlayer()
-    RxMediaService.create(rxMediaPlayer, Schedulers.computation()).also {
+    RxMediaService.create(rxMediaPlayer, AndroidSchedulers.mainThread()).also {
       rxMediaService = it
       phoneStateListener = RxMediaServiceSystemListeners.CustomPhoneStateListener(it)
       onAudioFocusChangeListener = RxMediaServiceSystemListeners.OnAudioFocusChangeListener(it)

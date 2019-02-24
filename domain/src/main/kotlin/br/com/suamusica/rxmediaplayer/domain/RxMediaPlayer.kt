@@ -16,7 +16,7 @@ interface RxMediaPlayer {
   fun setVolume(volume: Float): Completable
   fun release(): Completable
 
-  fun nowPlaying(): Maybe<MediaItem>
+  fun nowPlaying(): Single<Optional<MediaItem>>
   fun currentState(): Maybe<MediaServiceState>
 
   fun stateChanges(): Observable<MediaServiceState>
