@@ -19,6 +19,8 @@ import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import br.com.suamusica.rxmediaplayer.exception.PlayerNotConnectedToInternetException
+import br.com.suamusica.rxmediaplayer.parser.CustomHlsPlaylistParser
+import br.com.suamusica.rxmediaplayer.parser.SMHlsPlaylistParserFactory
 import br.com.suamusica.rxmediaplayer.utils.isConnected
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.DefaultLoadControl
@@ -34,6 +36,8 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
+import com.google.android.exoplayer2.source.hls.playlist.DefaultHlsPlaylistParserFactory
+import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylistParserFactory
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DataSource
@@ -66,7 +70,7 @@ class RxExoPlayer (
   private lateinit var exoPlayer: SimpleExoPlayer
   private val stateDispatcher = BehaviorSubject.create<MediaServiceState>()
   private var progressDisposable = Disposables.disposed()
-  private var compositeDisposable = CompositeDisposable()
+  private val compositeDisposable = CompositeDisposable()
   private var currentMediaItem: MediaItem? = null
   private var mediaState: MediaPlayerState = MediaPlayerState.IDLE
   private var cookies: List<HttpCookie> = signedCookies ?: emptyList()
@@ -310,6 +314,7 @@ class RxExoPlayer (
     @C.ContentType val type = Util.inferContentType(uri)
     when (type) {
       C.TYPE_HLS -> return HlsMediaSource.Factory(dataSourceFactory)
+          .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
           .setAllowChunklessPreparation(true)
           .createMediaSource(uri)
       C.TYPE_OTHER -> {
