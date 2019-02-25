@@ -24,6 +24,9 @@ import br.com.suamusica.rxmediaplayer.domain.PlayingState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.RxMediaService
 import br.com.suamusica.rxmediaplayer.entity.NotificationState
+import io.reactivex.Observable
+import io.reactivex.Scheduler
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -38,36 +41,45 @@ abstract class RxAndroidMediaService : Service() {
   private var disposable = CompositeDisposable()
   private var notificationDisposable = CompositeDisposable()
 
-  private lateinit var phoneStateListener: PhoneStateListener
-  private lateinit var onAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
+  private var phoneStateListener: PhoneStateListener? = null
+  private var onAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener? = null
 
   private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
   override fun onCreate() {
     super.onCreate()
 
-    val rxMediaPlayer = createRxMediaPlayer()
-    RxMediaService.create(rxMediaPlayer, AndroidSchedulers.mainThread()).also {
-      rxMediaService = it
-      phoneStateListener = RxMediaServiceSystemListeners.CustomPhoneStateListener(it)
-      onAudioFocusChangeListener = RxMediaServiceSystemListeners.OnAudioFocusChangeListener(it)
+    disposable.add(
+        Single.fromCallable { createRxMediaPlayer(playerThread()) }
+            .subscribeOn(playerThread())
+            .doOnSuccess { rxMediaPlayer ->
+              RxMediaService.create(rxMediaPlayer, playerThread()).also {
+                rxMediaService = it
+                phoneStateListener = RxMediaServiceSystemListeners.CustomPhoneStateListener(it)
+                onAudioFocusChangeListener = RxMediaServiceSystemListeners.OnAudioFocusChangeListener(it)
 
-      disposable.add(
-          it.stateChanges()
-              .filter { state ->  state is MediaBoundState }
-              .distinctUntilChanged { m1, m2 ->
-                val id1 = (m1 as MediaBoundState).item?.id
-                val id2 = (m2 as MediaBoundState).item?.id
+                disposable.add(
+                    it.stateChanges()
+                        .filter { state ->  state is MediaBoundState }
+                        .distinctUntilChanged { m1, m2 ->
+                          val id1 = (m1 as MediaBoundState).item?.id
+                          val id2 = (m2 as MediaBoundState).item?.id
 
-                return@distinctUntilChanged id1 == id2 && m1::class == m2::class
+                          return@distinctUntilChanged id1 == id2 && m1::class == m2::class
+                        }
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnNext { state -> createNotification(state) }
+                        .doAfterTerminate { removeNotification() }
+                        .doAfterTerminate { rxMediaService?.release() }
+                        .subscribe()
+                )
               }
-              .observeOn(AndroidSchedulers.mainThread())
-              .doOnNext { state -> createNotification(state) }
-              .doAfterTerminate { removeNotification() }
-              .doAfterTerminate { rxMediaService?.release() }
-              .subscribe()
-      )
-    }
+            }
+            .doOnError { Log.e("RxMediaService", it.message, it) }
+            .toCompletable()
+            .onErrorComplete()
+            .subscribe()
+    )
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -89,16 +101,18 @@ abstract class RxAndroidMediaService : Service() {
     notificationDisposable.clear()
   }
 
-  abstract fun createRxMediaPlayer(): RxMediaPlayer
+  abstract fun createRxMediaPlayer(scheduler: Scheduler? = null): RxMediaPlayer
 
   abstract fun createNotification(state: MediaServiceState)
 
   abstract fun observeNotification(): PublishSubject<NotificationState>
 
+  protected open fun playerThread(): Scheduler = AndroidSchedulers.mainThread()
+
   protected open fun removeNotification() {
     stopForeground(true)
     notificationManager.cancel(NOTIFICATION_ID)
-    telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
+    phoneStateListener?.let { telephonyManager.listen(it, PhoneStateListener.LISTEN_NONE) }
   }
 
   fun notify(notification: Notification) {

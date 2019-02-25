@@ -69,7 +69,7 @@ interface RxMediaService {
   fun setCookies(cookies: List<HttpCookie>): Single<Unit>
 
   companion object {
-    fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler = Schedulers.computation()): RxMediaService =
+    fun create(rxMediaPlayer: RxMediaPlayer, scheduler: Scheduler): RxMediaService =
         RxMediaServiceImpl(rxMediaPlayer, scheduler)
   }
 
