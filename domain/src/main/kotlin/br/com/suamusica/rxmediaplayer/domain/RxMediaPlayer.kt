@@ -17,7 +17,7 @@ interface RxMediaPlayer {
   fun release(): Completable
 
   fun nowPlaying(): Single<Optional<MediaItem>>
-  fun currentState(): Maybe<MediaServiceState>
+  fun currentState(): Single<MediaServiceState>
 
   fun stateChanges(): Observable<MediaServiceState>
 

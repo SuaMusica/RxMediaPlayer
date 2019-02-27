@@ -10,12 +10,14 @@ import br.com.suamusica.rxmediaplayer.domain.CompletedState
 import br.com.suamusica.rxmediaplayer.domain.ErrorState
 import br.com.suamusica.rxmediaplayer.domain.IdleState
 import br.com.suamusica.rxmediaplayer.domain.LoadingState
+import br.com.suamusica.rxmediaplayer.domain.MediaBoundState
 import br.com.suamusica.rxmediaplayer.domain.MediaItem
 import br.com.suamusica.rxmediaplayer.domain.MediaProgress
 import br.com.suamusica.rxmediaplayer.domain.MediaServiceState
 import br.com.suamusica.rxmediaplayer.domain.Optional
 import br.com.suamusica.rxmediaplayer.domain.PausedState
 import br.com.suamusica.rxmediaplayer.domain.PlayingState
+import br.com.suamusica.rxmediaplayer.domain.RepeatState
 import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import br.com.suamusica.rxmediaplayer.exception.PlayerNotConnectedToInternetException
@@ -178,9 +180,7 @@ class RxExoPlayer (
 
   override fun nowPlaying(): Single<Optional<MediaItem>> = Single.fromCallable { Optional.ofNullable(currentMediaItem) }
 
-  override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
-    stateDispatcher.value?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
-  }
+  override fun currentState(): Single<MediaServiceState> = stateDispatcher.singleOrError()
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {

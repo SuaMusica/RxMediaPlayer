@@ -116,9 +116,7 @@ class RxAndroidMediaPlayer(
 
   override fun nowPlaying(): Single<Optional<MediaItem>> = Single.fromCallable { Optional.ofNullable(currentMediaItem) }
 
-  override fun currentState(): Maybe<MediaServiceState> = Maybe.create { emitter ->
-    stateDispatcher.value?.let { emitter.onSuccess(it) } ?: emitter.onComplete()
-  }
+  override fun currentState(): Single<MediaServiceState> = stateDispatcher.singleOrError()
 
   override fun stateChanges(): Observable<MediaServiceState> = stateDispatcher.distinctUntilChanged()
       .doOnNext {

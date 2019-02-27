@@ -186,13 +186,16 @@ internal class RxMediaServiceImpl(
           .subscribeOn(scheduler)
 
   override fun changeRepeatState(repeatMode: RepeatState): Completable =
-      Completable.fromAction {
-        this@RxMediaServiceImpl.repeatState = repeatMode
-      }.andThen(
-          Completable.fromAction {
-            rxMediaPlayer.currentState().blockingGet()?.setRepeatModeState(repeatMode)?.let { stateDispatcher.onNext(it) }
+      rxMediaPlayer.currentState()
+          .doOnError { println(it) }
+          .doOnSubscribe { this@RxMediaServiceImpl.repeatState = repeatMode }
+          .flatMapCompletable { mediaServiceState ->
+            Single.fromCallable { mediaServiceState.setRepeatModeState(repeatState) }
+                .doOnSuccess { stateDispatcher.onNext(it) }
+                .toCompletable()
           }
-      ).subscribeOn(scheduler)
+          .onErrorComplete()
+          .subscribeOn(scheduler)
 
   override fun goTo(mediaItem: MediaItem) =
       maybeGoTo(mediaItem)
@@ -203,9 +206,9 @@ internal class RxMediaServiceImpl(
               })
           .flatMapCompletable { newMedia ->
             if (newMedia.second)
-              stop().andThen(rxMediaPlayer.play(newMedia.first))
-            else
               rxMediaPlayer.play()
+            else
+              stop().andThen(rxMediaPlayer.play(newMedia.first))
           }
 
 
@@ -233,26 +236,40 @@ internal class RxMediaServiceImpl(
           .andThen(Single.fromCallable { mediaItem })
           .flatMapCompletable { rxMediaPlayer.prepareMedia(it) }
 
-  private fun shuffleQueue(randomized: Boolean) = Completable.fromAction {
-    if (randomized) {
-      originalQueue = queue.clone() as LinkedList<MediaItem>
-      queue.shuffle()
+  private fun shuffleQueue(randomized: Boolean) =
+      rxMediaPlayer.currentState()
+          .doOnError { println(it) }
+          .doOnSubscribe {
+            if (randomized) {
+              originalQueue = queue.clone() as LinkedList<MediaItem>
+              queue.shuffle()
+            } else queue = originalQueue.clone() as LinkedList<MediaItem>
+          }
+          .flatMapCompletable { mediaServiceState ->
+            Single.fromCallable { mediaServiceState.setRandomizedState(randomized) }
+                .doOnSuccess {
+                  val currentIndex = queue.indexOf(it.item)
+                  if (currentIndex != 0) {
+                    reorder(0, currentIndex).onErrorComplete().blockingGet()
+                  }
+                }
+                .toCompletable()
+          }
+          .onErrorComplete()
+          .subscribeOn(scheduler)
 
-      rxMediaPlayer.currentState().blockingGet()?.setRandomizedState(randomized)?.let { currentItem ->
-        val currentIndex = queue.indexOf(currentItem.item)
-        if (currentIndex != 0) {
-          reorder(0, currentIndex).onErrorComplete().blockingGet()
-        }
-      }
-    } else queue = originalQueue.clone() as LinkedList<MediaItem>
-  }
-
-  private fun dispatchObservables(randomized: Boolean) = Completable.fromAction {
-    rxMediaPlayer.currentState().blockingGet()?.setRandomizedState(randomized)?.let {
-      stateDispatcher.onNext(it)
-      queueDispatcher.onNext(queue)
-    }
-  }
+  private fun dispatchObservables(randomized: Boolean) =
+      rxMediaPlayer.currentState()
+          .flatMapCompletable { mediaServiceState ->
+            Single.fromCallable { mediaServiceState.setRandomizedState(randomized) }
+                .doOnSuccess {
+                  stateDispatcher.onNext(it)
+                  queueDispatcher.onNext(queue)
+                }
+                .toCompletable()
+          }
+          .onErrorComplete()
+          .subscribeOn(scheduler)
 
   private fun handleCompletedState(it: MediaServiceState): CompletableSource? {
     return when (repeatState) {
