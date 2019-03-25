@@ -6,9 +6,9 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.support.annotation.IntDef
-import android.support.annotation.RequiresApi
-import android.support.v4.media.AudioAttributesCompat
+import androidx.annotation.IntDef
+import androidx.annotation.RequiresApi
+import androidx.media.AudioAttributesCompat
 
 /**
  * Compatibility version of an [AudioFocusRequest].

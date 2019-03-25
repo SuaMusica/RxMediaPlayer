@@ -11,7 +11,7 @@ android {
     versionCode 1
     versionName "1.0"
 
-    testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   buildTypes {
     release {
@@ -26,19 +26,13 @@ android {
   }
 }
 
-configurations.all {
-  resolutionStrategy {
-    force "com.android.support:support-media-compat:$appcompat_version"
-  }
-}
-
 dependencies {
   implementation fileTree(include: ['*.jar'], dir: 'libs')
   implementation project(':domain')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-  implementation "com.android.support:appcompat-v7:$appcompat_version"
-  implementation "com.android.support:support-v4:$appcompat_version"
+  implementation "androidx.appcompat:appcompat:$appcompat_version"
+  implementation "androidx.legacy:legacy-support-v4:$appcompat_version"
 
   implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
   implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"

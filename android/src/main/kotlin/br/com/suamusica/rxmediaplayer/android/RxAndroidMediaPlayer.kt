@@ -6,7 +6,7 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.PowerManager
-import android.support.v4.media.AudioAttributesCompat
+import androidx.media.AudioAttributesCompat
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.END
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.IDLE
 import br.com.suamusica.rxmediaplayer.android.MediaPlayerState.INITIALIZED
@@ -26,7 +26,6 @@ import br.com.suamusica.rxmediaplayer.domain.RxMediaPlayer
 import br.com.suamusica.rxmediaplayer.domain.StoppedState
 import io.reactivex.Completable
 import io.reactivex.Completable.create
-import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.Disposables

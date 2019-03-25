@@ -31,8 +31,9 @@ import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 
 import android.net.Uri;
-import android.support.annotation.Nullable;
 import android.util.Base64;
+
+import androidx.annotation.Nullable;
 
 
 public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlaylist> {
