@@ -49,35 +49,8 @@ abstract class RxAndroidMediaService : Service() {
             .subscribeOn(playerThread())
             .doOnSuccess { rxMediaPlayer ->
               Log.d("RxMediaService", "doOnSuccess()")
-              RxMediaService.create(rxMediaPlayer, playerThread()).also {
-                Log.d("RxMediaService", "RxMediaService.create()")
-                rxMediaService = it
-                phoneStateListener = RxMediaServiceSystemListeners.CustomPhoneStateListener(it)
-                onAudioFocusChangeListener = RxMediaServiceSystemListeners.OnAudioFocusChangeListener(it)
-
-                disposable.add(
-                    it.stateChanges()
-                        .filter { state ->  state is MediaBoundState }
-                        .distinctUntilChanged { m1, m2 ->
-                          Log.d("RxMediaService", "distinctUntilChanged")
-                          val id1 = (m1 as MediaBoundState).item?.id
-                          val id2 = (m2 as MediaBoundState).item?.id
-
-                          return@distinctUntilChanged id1 == id2 && m1::class == m2::class
-                        }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .doOnNext { state -> createNotification(state) }
-                        .doAfterTerminate {
-                          Log.d("RxMediaService", "doAfterTerminate.removeNotification()")
-                          removeNotification()
-                        }
-                        .doAfterTerminate {
-                          Log.d("RxMediaService", "doAfterTerminate.rxMediaService?.release()")
-                          rxMediaService?.release()
-                        }
-                        .subscribe()
-                )
-              }
+              val service = rxMediaService?.let { it } ?: RxMediaService.create(rxMediaPlayer, playerThread())
+              setupService(service)
             }
             .doOnError { Log.e("RxMediaService", it.message, it) }
             .toCompletable()
@@ -86,14 +59,38 @@ abstract class RxAndroidMediaService : Service() {
     )
   }
 
+  private fun setupService(it: RxMediaService) {
+    rxMediaService = it
+    phoneStateListener = RxMediaServiceSystemListeners.CustomPhoneStateListener(it)
+    onAudioFocusChangeListener = RxMediaServiceSystemListeners.OnAudioFocusChangeListener(it)
+
+    disposable.add(
+        it.stateChanges()
+            .filter { state -> state is MediaBoundState }
+            .distinctUntilChanged { m1, m2 ->
+              Log.d("RxMediaService", "distinctUntilChanged")
+              val id1 = (m1 as MediaBoundState).item?.id
+              val id2 = (m2 as MediaBoundState).item?.id
+
+              return@distinctUntilChanged id1 == id2 && m1::class == m2::class
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnNext { state -> createNotification(state) }
+            .doAfterTerminate {
+              Log.d("RxMediaService", "doAfterTerminate.removeNotification()")
+              removeNotification()
+            }
+            .doAfterTerminate {
+              Log.d("RxMediaService", "doAfterTerminate.rxMediaService?.release()")
+              rxMediaService?.release()
+            }
+            .subscribe()
+    )
+  }
+
   override fun onRebind(intent: Intent?) {
     Log.d("RxMediaService", "onRebind()")
     super.onRebind(intent)
-  }
-
-  override fun onStart(intent: Intent?, startId: Int) {
-    Log.d("RxMediaService", "onStart()")
-    super.onStart(intent, startId)
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

@@ -127,7 +127,7 @@ class RxExoPlayer (
 
   override fun pause(): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer - RxMedia", "pause(playWhenReady: false)")
+    Log.d("ExoPlayer - RxMedia", "pause(playWhenReady: false) - $this")
 
     mediaState = MediaPlayerState.PAUSED
 
@@ -138,7 +138,7 @@ class RxExoPlayer (
 
   override fun prepareMedia(currentItem: MediaItem): Completable = Completable.fromAction {
     exoPlayer.playWhenReady = false
-    Log.d("ExoPlayer - RxMedia", "prepareMedia(playWhenReady: false)")
+    Log.d("ExoPlayer - RxMedia", "prepareMedia(playWhenReady: false) : $this")
 
     mediaState = MediaPlayerState.STOPPED
 
@@ -146,7 +146,7 @@ class RxExoPlayer (
   }
 
   override fun stop(): Completable = Completable.fromAction {
-    Log.d("ExoPlayer - RxMedia", "stop")
+    Log.d("ExoPlayer - RxMedia", "stop : $this")
     if (exoPlayer.playWhenReady) exoPlayer.stop()
 
     mediaState = MediaPlayerState.STOPPED
@@ -166,7 +166,7 @@ class RxExoPlayer (
       Completable.fromAction { exoPlayer.volume = volume }
 
   override fun release(): Completable {
-    Log.d("ExoPlayer - RxMedia", "release")
+    Log.d("ExoPlayer - RxMedia", "release: $this")
     return Single.fromCallable {
       exoPlayer.stop(true)
     }
